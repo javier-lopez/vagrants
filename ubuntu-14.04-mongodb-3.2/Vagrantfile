@@ -1,0 +1,52 @@
+# vi: set ft=ruby :
+VAGRANTFILE_API_VERSION = '2'
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "mongo-3.2.example.com"  => "10.10.10.10",
+}
+
+host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            machine.vm.box = "ubuntu/trusty64"
+            machine.vm.hostname = name
+            machine.vm.network :private_network, ip: ip
+
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.name = name
+                if vbox.name.match(/^mongo/)
+                #if vbox.name =~  /\Aitop/
+                    vbox.customize ["modifyvm", :id, "--memory", 256]
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+                #elsif vbox.name == "foo"
+                    #vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                else
+                    vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                end
+            end
+
+            #$ vagrant plugin install vagrant-hosts
+            if Vagrant.has_plugin?('vagrant-hosts')
+                machine.vm.provision :hosts, sync_hosts: true
+            elsif Vagrant.has_plugin?('vagrant-hostmanager')
+                machine.hostmanager.enabled     = true
+                machine.hostmanager.manage_host = true
+                machine.hostmanager.aliases     = aliases
+            end
+
+            #authorize default public ssh key
+            machine.vm.provision 'shell', inline: "mkdir -p /root/.ssh/"
+            machine.vm.provision 'shell', inline: "mkdir -p /home/vagrant/.ssh/", privileged: false
+            if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
+                ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys"
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys", privileged: false
+            end
+
+            machine.vm.provision 'shell', path: "provision-mongodb.sh"
+        end
+    end
+end
