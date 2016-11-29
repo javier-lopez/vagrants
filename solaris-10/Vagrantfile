@@ -1,0 +1,25 @@
+# vi: set ft=ruby :
+VAGRANTFILE_API_VERSION = '2'
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "solaris.example.com"  => "10.10.10.10",
+}
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            machine.vm.box = "tnarik/solaris10-minimal"
+            #machine.vm.hostname = name
+            #machine.vm.network :private_network, ip: ip
+
+            #machine.vm.provider "virtualbox" do |vbox|
+                #vbox.name = name
+                #vbox.customize ["modifyvm", :id, "--memory", 2048]
+                #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+            #end
+
+            #machine.vm.provision 'shell', path: "provision.sh"
+        end
+    end
+end
