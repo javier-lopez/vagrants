@@ -1,0 +1,5 @@
+[client]
+10.10.10.10 ansible_user=vagrant
+
+[server]
+10.10.10.11 ansible_user=vagrant

@@ -1,0 +1,14 @@
+#ssh keys, it's better if they're passwordless so the backup setup is fully automatic
+ssh_public_key:  ~/.ssh/id_rsa.pub
+ssh_private_key: ~/.ssh/id_rsa
+#ssh_client_user: #default to {{ansible_user}}
+#ssh_server_user: #default to {{ansible_user}}
+
+#client
+client_backup_files: ['/etc/passwd', '/home/vagrant']
+client_cron_date: "0 22 * * *" #every day at 10:00pm
+
+#server
+server_daily: True
+server_weekly: True
+server_monthly: True

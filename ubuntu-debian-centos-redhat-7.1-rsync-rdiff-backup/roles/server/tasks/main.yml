@@ -1,0 +1,59 @@
+---
+- name: set ssh_server_user variable
+  set_fact: ssh_server_user="{{ansible_user}}"
+  when: ssh_server_user is not defined
+
+- name: authorize public ssh key
+  authorized_key: user={{ssh_server_user}} key="{{lookup('file', '{{ssh_public_key}}')}}"
+
+- name: ubuntu/debian - install rdiff-backup
+  apt: name=rdiff-backup state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+- name: redhat - get extra epel packages, required for rdiff-backup
+  get_url: url=http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm dest=/usr/src/epel-release-7-5.noarch.rpm checksum=sha1:d0a57b3f6ea9987cd311d38cdaa8c2d9d3fd9d93
+  when: ansible_distribution == 'RedHat'
+
+- name: redhat - enable extra epel packages, required for rdiff-backup
+  yum: name=/usr/src/epel-release-7-5.noarch.rpm state=present
+  when: ansible_distribution == 'RedHat'
+
+- name: centos - enable extra epel packages, required for rdiff-backup
+  yum: name=epel-release state=latest
+  when: ansible_distribution == 'CentOS'
+
+- name: centos/redhat - install base rdiff-backup
+  yum: name=rdiff-backup state=latest
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: ensure recover directory exists
+  file: name=/home/{{ssh_server_user}}/recover/ owner={{ssh_server_user}} group={{ssh_server_user}} state=directory recurse=yes
+
+- name: add daily backup cronjob
+  cron:
+    name: "Daily backup"
+    minute:  "0"
+    hour:    "1"
+    user: "root"
+    job: "rdiff-backup /home/{{ssh_server_user}}/backup /home/{{ssh_server_user}}/recover/daily && rdiff-backup --remove-older-than 6D  /home/{{ssh_server_user}}/recover/daily"
+  when: server_daily == True
+
+- name: add weekly backup cronjob
+  cron:
+    name: "Weekly backup"
+    minute:  "0"
+    hour:    "1"
+    weekday: "0"
+    user: "root"
+    job: "rdiff-backup /home/{{ssh_server_user}}/backup /home/{{ssh_server_user}}/recover/weekly && rdiff-backup --remove-older-than 3W  /home/{{ssh_server_user}}/recover/weekly"
+  when: server_daily == True
+
+- name: add monthly backup cronjob
+  cron:
+    name: "Monthly backup"
+    minute:  "0"
+    hour:    "1"
+    day:     "1"
+    user: "root"
+    job: "rdiff-backup /home/{{ssh_server_user}}/backup /home/{{ssh_server_user}}/recover/monthly && rdiff-backup --remove-older-than 12M  /home/{{ssh_server_user}}/recover/monthly"
+  when: server_daily == True

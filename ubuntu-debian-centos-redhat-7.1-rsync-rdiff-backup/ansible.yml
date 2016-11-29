@@ -1,0 +1,15 @@
+---
+#- hosts: all
+
+  #roles:
+    #- common
+
+- hosts: client
+
+  roles:
+    - client
+
+- hosts: server
+
+  roles:
+    - server

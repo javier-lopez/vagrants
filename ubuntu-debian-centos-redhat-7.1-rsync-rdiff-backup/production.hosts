@@ -1,0 +1,5 @@
+[client]
+client.example.com ansible_user=admin
+
+[server]
+server.example.com ansible_user=admin

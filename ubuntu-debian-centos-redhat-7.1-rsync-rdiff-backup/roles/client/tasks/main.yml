@@ -1,0 +1,45 @@
+---
+- name: set ssh_client_user variable
+  set_fact: ssh_client_user="{{ansible_user}}"
+  when: ssh_client_user is not defined
+
+- name: upload private ssh key
+  copy: content="{{lookup('file', '{{ssh_private_key}}')}}" dest=/home/{{ssh_client_user}}/.ssh/backup_rsa owner={{ssh_client_user}} mode=0600 backup=yes
+  become_user: "{{ssh_client_user}}"
+
+- name: ubuntu/debian - install rsync
+  apt: name=rsync state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+- name: centos/redhat - install rsync
+  yum: name=rsync state=latest
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: get backup-remote-rsync script
+  get_url: url=https://raw.githubusercontent.com/chilicuil/learn/master/sh/tools/backup-remote-rsync dest=/usr/bin/backup-remote-rsync mode=0755 validate_certs=no
+
+- name: add backup cronjobs
+  cron:
+    name: "Backup"
+    minute:  "{{client_cron_date.split()[0]}}"
+    hour:    "{{client_cron_date.split()[1]}}"
+    day:     "{{client_cron_date.split()[2]}}"
+    month:   "{{client_cron_date.split()[3]}}"
+    weekday: "{{client_cron_date.split()[4]}}"
+    user: "root"
+    job: "backup-remote-rsync -u {{hostvars[item]['ansible_user']}} -i /home/{{ssh_client_user}}/.ssh/backup_rsa -r {{hostvars[item]['inventory_hostname']}} {{client_backup_files|join(' ')}}"
+  with_items: "{{groups['server']}}"
+  when: ssh_server_user is not defined
+
+- name: add backup cronjobs
+  cron:
+    name: "Backup"
+    minute:  "{{client_cron_date.split()[0]}}"
+    hour:    "{{client_cron_date.split()[1]}}"
+    day:     "{{client_cron_date.split()[2]}}"
+    month:   "{{client_cron_date.split()[3]}}"
+    weekday: "{{client_cron_date.split()[4]}}"
+    user: "root"
+    job: "backup-remote-rsync -u {{ssh_server_user}} -i /home/{{ssh_client_user}}/.ssh/backup_rsa -r {{hostvars[item]['inventory_hostname']}} {{client_backup_files|join(' ')}}"
+  with_items: "{{groups['server']}}"
+  when: ssh_server_user is defined
