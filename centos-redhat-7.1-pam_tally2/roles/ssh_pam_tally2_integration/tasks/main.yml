@@ -1,0 +1,15 @@
+---
+- name: Enable UsePAM from ssh settings
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^UsePAM\s+yes" insertafter="#UsePAM" line="UsePAM yes" backup=yes
+  when: ssh_pam_tally2_integration == True
+  notify: restart ssh
+
+- name: Enable ChallengeResponseAuthentication from ssh settings
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^ChallengeResponseAuthentication" line="ChallengeResponseAuthentication yes" backup=yes
+  when: ssh_pam_tally2_integration == True
+  notify: restart ssh
+
+- name: Disable PasswordAuthentication from ssh settings
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" backup=yes
+  when: ssh_pam_tally2_integration == True
+  notify: restart ssh

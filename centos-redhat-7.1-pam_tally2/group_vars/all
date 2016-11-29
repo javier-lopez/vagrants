@@ -1,0 +1,12 @@
+#users
+users:
+  - username: tally
+              # 3sqDTAmf
+    password: '$1$h1iAW4ai$nBx8O8o/p23euYx5E95BK0'
+    groups: ['wheel', 'adm']
+    shell: /bin/bash
+
+pam_tally2_even_root: False
+pam_tally2_attemps: 3
+pam_tally2_unlock_time: 600 #10 min
+ssh_pam_tally2_integration: True

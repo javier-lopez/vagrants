@@ -1,0 +1,3 @@
+- name: restart ssh
+  shell: service sshd restart
+  when: ssh_pam_tally2_integration == True

@@ -1,0 +1,13 @@
+---
+- name: Per-user group creation
+  group: name="{{item.username}}"
+  with_items: "{{users}}"
+
+- name: User creation
+  user: name="{{item.username}}"
+        group="{{item.username}}"
+        groups="{{item.groups | join(',')}}"
+        shell={{item.shell if item.shell is defined else '/bin/bash'}}
+        password="{{item.password if item.password is defined else '!'}}"
+        createhome="yes"
+  with_items: "{{users}}"

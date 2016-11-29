@@ -1,0 +1,20 @@
+---
+- name: Set pam_tally2 settings, even root
+  lineinfile: dest={{item}} regexp="^auth\s*required\s*pam_env.so" insertafter="pam_env.so$" line="auth        required      pam_tally2.so deny={{pam_tally2_attemps}} even_deny_root unlock_time={{pam_tally2_unlock_time}}" backup=yes
+  with_items:
+    - /etc/pam.d/system-auth
+    - /etc/pam.d/password-auth
+  when: pam_tally2_even_root == True
+
+- name: Set pam_tally2 settings
+  lineinfile: dest={{item}} regexp="^auth\s*required\s*pam_env.so" insertafter="pam_env.so$" line="auth        required      pam_tally2.so deny={{pam_tally2_attemps}} unlock_time={{pam_tally2_unlock_time}}" backup=yes
+  with_items:
+    - /etc/pam.d/system-auth
+    - /etc/pam.d/password-auth
+  when: pam_tally2_even_root == False
+
+- name: Enable pam_tally2
+  lineinfile: dest={{item}} regexp="^account\s*required\s*pam_unix.so" insertafter="pam_unix.so$" line="account        required      pam_tally2.so" backup=yes
+  with_items:
+    - /etc/pam.d/system-auth
+    - /etc/pam.d/password-auth

@@ -1,0 +1,7 @@
+---
+- hosts: all
+
+  roles:
+    - { role: users, tags: ["users"] }
+    - { role: pam_tally2, tags: ["pam_tally2"] }
+    - { role: ssh_pam_tally2_integration, tags: ["ssh_pam_tally2_integration"] }
