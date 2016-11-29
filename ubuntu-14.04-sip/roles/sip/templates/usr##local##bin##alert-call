@@ -1,0 +1,30 @@
+#!/bin/sh
+
+[ -z "${1}" ] && exit 0
+
+mkdir -p /tmp/call/
+
+expect_script='#!/usr/bin/env expect
+#disables script output
+log_user 0
+
+spawn /usr/bin/pjsua --config-file "/etc/pjsua.rc" --play-file PJSUA_MESSAGE PJSUA_NUMBER
+
+#Waiting for pjsua to attach.
+sleep 30
+
+#exit pjsua
+send "q\r"
+'
+
+message="${1}"; shift
+
+if ! who | grep sip >/dev/null; then
+    for arg; do
+        printf "%s\\n" "${expect_script}" | \
+            sed "s,PJSUA_MESSAGE,${message},g;s,PJSUA_NUMBER,sip:${arg}@{{sip_registar}},g" \
+            > /tmp/call/"${arg}".expect
+        chmod +x /tmp/call/"${arg}".expect
+        /tmp/call/"${arg}".expect
+    done
+fi

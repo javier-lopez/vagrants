@@ -1,0 +1,8 @@
+sip_user: "sip"
+sip_call_date: "10 7 * * 1,2,3,4,5" #every work day (monday-friday) at 7:10am
+sip_message: roles/sip/data/alarm.wav
+sip_target_numbers: ['0115215557435467', '0115215599999999']
+sip_username: "username"
+sip_password: "passw0rd"
+sip_registar: "dallas.voip.ms"
+sip_realm: "dallasnew1.voip.ms"

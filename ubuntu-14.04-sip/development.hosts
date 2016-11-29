@@ -1,0 +1,2 @@
+[sip]
+10.10.10.10 ansible_user=vagrant

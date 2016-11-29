@@ -1,0 +1,33 @@
+---
+- name: install deps
+  apt: name=libasound2,expect state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+
+- name: create sip user
+  user: name={{sip_user}}
+
+- name: upload pjsua
+  copy: src={{item.orig}} dest={{item.dest}} mode=0755
+  with_items:
+      - { orig: 'roles/sip/data/pjsua', dest: '/usr/bin/pjsua' }
+
+- name: create pjsua conf
+  template: src=etc##pjsua.rc dest=/etc/pjsua.rc owner={{sip_user}} group={{sip_user}} mode=0775
+
+- name: create alert call script
+  template: src=usr##local##bin##alert-call dest=/usr/local/bin/alert-call owner={{sip_user}} group={{sip_user}} mode=0775
+
+- name: upload message
+  copy: src={{item.orig}} dest={{item.dest}} mode=0755
+  with_items:
+      - { orig: "{{sip_message}}", dest: '/tmp/alarm.wav' }
+
+- name: add alarm cronjobs
+  cron:
+    name: "Sip Call Alarm"
+    minute:  "{{sip_call_date.split()[0]}}"
+    hour:    "{{sip_call_date.split()[1]}}"
+    day:     "{{sip_call_date.split()[2]}}"
+    month:   "{{sip_call_date.split()[3]}}"
+    weekday: "{{sip_call_date.split()[4]}}"
+    user: "{{sip_user}}"
+    job: "/usr/local/bin/alert-call /tmp/alarm.wav {{sip_target_numbers|join(' ')}}"
