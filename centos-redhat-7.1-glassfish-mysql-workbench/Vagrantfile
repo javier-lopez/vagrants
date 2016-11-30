@@ -1,0 +1,98 @@
+# vi: set ft=ruby :
+VAGRANTFILE_API_VERSION = '2'
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "continuidad.movil" => "10.10.10.10",
+}
+
+# Cross-platform way of finding an executable in the $PATH.
+def which(cmd)
+    exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+    ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+            exe = File.join(path, "#{cmd}#{ext}")
+            return exe if File.executable?(exe) && !File.directory?(exe)
+        end
+    end
+    nil
+end
+
+#Execute commands locally, required to retrieve files from Centos, which
+#doesn't support vboxguests
+module LocalCommand
+    class Config < Vagrant.plugin("2", :config)
+        attr_accessor :command
+    end
+    class Plugin < Vagrant.plugin("2")
+        name "local_shell"
+        config(:local_shell, :provisioner) do
+            Config
+        end
+        provisioner(:local_shell) do
+            Provisioner
+        end
+    end
+    class Provisioner < Vagrant.plugin("2", :provisioner)
+        def provision
+            result = system "#{config.command}"
+        end
+    end
+end
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            #tested vm
+            machine.vm.box      = "centos/7"
+            machine.vm.hostname = name
+            machine.vm.network :private_network, ip: ip
+
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.customize ["modifyvm", :id, "--memory", 1024]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+            end
+
+            if machine.vm.box.match(/^centos/)
+                if !which('rsync') #Windows case
+                    machine.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+                    machine.vm.provision 'shell', inline: "rm -rf /vagrant /vagrant-tmp"
+                    machine.vm.provision 'shell', inline: "mkdir -p /vagrant /vagrant-tmp"
+                    machine.vm.provision 'shell', inline: "chown -R vagrant:vagrant /vagrant /vagrant-tmp"
+                    machine.vm.provision "file", source: ".", destination: "/vagrant-tmp/"
+                    machine.vm.provision 'shell', inline: "mv /vagrant-tmp/*/* /vagrant/"
+            machine.vm.provision 'shell', inline: "rm -rf /vagrant-tmp"
+                end
+            end
+
+            #$ vagrant plugin install vagrant-hosts
+            if Vagrant.has_plugin?('vagrant-hosts')
+                machine.vm.provision :hosts, sync_hosts: true
+            elsif Vagrant.has_plugin?('vagrant-hostmanager')
+                machine.hostmanager.enabled     = true
+                machine.hostmanager.manage_host = true
+                machine.hostmanager.aliases     = aliases
+            end
+
+            #authorize default public ssh key
+            if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
+                ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+                machine.vm.provision 'shell', inline: "mkdir -p /root/.ssh/"
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys"
+                machine.vm.provision 'shell', inline: "mkdir -p /home/vagrant/.ssh/", privileged: false
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys", privileged: false
+            end
+
+            machine.vm.provision 'shell', path: "deploy/01-disable-selinux.sh"
+            machine.vm.provision 'shell', path: "deploy/02-provision-epel.sh"
+            machine.vm.provision 'shell', path: "deploy/03-provision-jdk.sh"
+            machine.vm.provision 'shell', path: "deploy/04-provision-mysql.sh"
+            machine.vm.provision 'shell', path: "deploy/05-provision-workbench.sh"
+            #machine.vm.provision 'shell', path: "deploy/06-provision-glassfish.sh"
+
+            #if machine.vm.box.match(/^centos/)
+            #    machine.vm.provision "list-files", type: "local_shell", command: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P 2222 vagrant@localhost:/vagrant/MongoRESTServer.tar.gz ."
+            #end
+        end
+    end
+end
