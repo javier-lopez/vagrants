@@ -1,0 +1,56 @@
+---
+- name: ensure {{itop_backup_dir}} directory exists
+  file: name={{itop_backup_dir}} state=directory recurse=yes
+
+- name: upload itop recovery files, db/archive
+  copy: src={{item.orig}} dest={{item.dest}} backup=yes owner={{httpd_owner}} group={{httpd_group}} mode=0775
+  with_items:
+      - { orig: '{{itop_recovery_db}}'     , dest: '{{itop_backup_dir}}' }
+      - { orig: '{{itop_recovery_archive}}', dest: '{{itop_backup_dir}}' }
+
+#it always exists as it was defined previously
+#- name: check if itop db exists
+  #shell: mysql -uroot  -p {{db_root_passwd}} -h {{db_host}} 'show databases;' | grep {{db_name}} >/dev/null 2>&1
+  #register: db_itop_status
+
+- name: backup live itop db
+  mysql_db: name={{db_name}} state=dump target={{itop_backup_dir}}/{{db_name}}.orig.{{ansible_date_time.iso8601}}.sql
+  #when: db_itop_status | succeded
+
+- name: change owner in live itop db backups
+  shell: chown {{httpd_owner}}:{{httpd_group}} {{itop_backup_dir}}/*.sql
+
+- name: import new itop database
+  mysql_db: name={{db_name}} state=import target={{itop_backup_dir}}/{{itop_recovery_db | basename}}
+
+- name: backup live itop files
+  command: mv {{httpd_dir}} {{itop_backup_dir}}/{{httpd_dir | basename}}.www-orig.{{ansible_date_time.iso8601}}
+
+- name: ensure remove-old-backups.sh script exists
+  copy: src={{item.orig}} dest={{item.dest}} mode=0755
+  with_items:
+      - { orig: 'roles/itop/templates/remove-old-backups.sh', dest: '/usr/local/bin/remove-old-backups.sh' }
+
+- name: cleanup older >5 db backup files
+  shell: /usr/local/bin/remove-old-backups.sh {{itop_backup_dir}}/{{db_name}}.orig 3
+
+- name: cleanup older >5 itop archive files
+  shell: /usr/local/bin/remove-old-backups.sh {{itop_backup_dir}}/{{httpd_dir | basename}}.www-orig 3
+
+- name: create temporal directory to where extract itop backup archive
+  file: name=/tmp/itop-archive/ state=directory recurse=yes
+
+- name: extract itop backup archive
+  unarchive: src={{itop_backup_dir}}/{{itop_recovery_archive | basename}} dest=/tmp/itop-archive copy=no
+
+- name: old itop => itop
+  shell: rm -rf {{httpd_dir}} && mv /tmp/itop-archive/itop* {{httpd_dir}} && rm -rf /tmp/itop-archive creates={{httpd_dir}}
+
+- name: replace hostname in conf/production/config-itop.php
+  lineinfile: dest={{httpd_dir}}/conf/production/config-itop.php backup=yes state=present regexp="'app_root_url' =>" line="'app_root_url' => 'http://{{inventory_hostname}}/',"
+
+- name: set permissions on itop
+  file: name={{httpd_dir}} owner={{httpd_owner}} group={{httpd_group}} mode=0775 state=directory recurse=yes
+
+- name: set permissions on itop configuration file
+  file: name={{httpd_dir}}/conf/production/config-itop.php owner={{httpd_owner}} group={{httpd_group}} mode=0400

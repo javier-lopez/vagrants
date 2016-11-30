@@ -1,0 +1,8 @@
+---
+- hosts: all
+
+  roles:
+    - { role: common, tags: ["common"] }
+    - { role: db,     tags: ["db"]     }
+    - { role: httpd,  tags: ["httpd"]  }
+    - { role: itop,   tags: ["itop"]   }

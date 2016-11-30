@@ -1,0 +1,38 @@
+---
+- name: centos/redhat install mariadb
+  yum: name=mariadb-server,mariadb,MySQL-python state=latest
+  notify:
+      - service mariadb centos redhat
+      - service mariadb ubuntu debian
+  when: db_install == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+
+- name: ubuntu/debian install mariadb
+  apt: name=mariadb-server,mariadb-client,python-mysqldb state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  notify:
+      - service mariadb centos redhat
+      - service mariadb ubuntu debian
+  when: db_install == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+
+- name: centos/redhat start mariadb
+  service: name=mariadb state=started
+  when: db_install == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+
+- name: ubuntu/debian start mariadb
+  service: name=mysql state=started
+  when: db_install == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+
+- name: change mariadb root password
+  mysql_user: name=root password={{db_root_passwd}}
+  when: db_install == True
+
+- name: change my.cnf (for root password)
+  template: src=my.cnf.j2 dest=/root/.my.cnf owner=root group=root mode=0600
+  when: db_install == True
+
+- name: create mariadb database
+  mysql_db: name={{db_name}} state=present
+  when: db_install == True
+
+- name: create mariadb user
+  mysql_user: name={{db_user}} password={{db_passwd}} priv={{db_name}}.*:ALL state=present
+  when: db_install == True

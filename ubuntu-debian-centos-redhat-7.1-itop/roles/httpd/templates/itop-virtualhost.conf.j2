@@ -1,0 +1,16 @@
+<VirtualHost *:80>
+    DocumentRoot "/var/www/{{httpd_fqdn}}/"
+    ServerName  {{httpd_fqdn}}
+    ServerAlias {{httpd_fqdn}}
+    ServerAdmin {{httpd_admin}}
+
+    ErrorLog  "/var/www/{{httpd_fqdn}}/logs/error.log"
+    CustomLog "/var/www/{{httpd_fqdn}}/logs/access.log" common
+
+    <Directory "/var/www/{{httpd_fqdn}}/">
+        Options -Includes -Indexes -ExecCGI
+        AllowOverride All
+        Order allow,deny
+        Allow from all
+    </Directory>
+</VirtualHost>

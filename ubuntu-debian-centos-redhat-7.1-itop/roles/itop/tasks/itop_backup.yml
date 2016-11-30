@@ -1,0 +1,28 @@
+---
+- name: ensure {{itop_backup_dir}} directory exists
+  file: name={{itop_backup_dir}} state=directory recurse=yes
+
+- name: ensure backup scripts exists
+  copy: src={{item.orig}} dest={{item.dest}} mode=0755
+  with_items:
+      - { orig: 'roles/itop/templates/backup-dbs', dest: '/usr/bin/backup-dbs' }
+
+- name: setup itop db cronjob
+  #every day at midnigh
+  #0 0 * * * root backup-dbs -u root -p {{db_root_passwd}} -o {{itop_backup_dir}} {{db_name}}
+  cron: name="itop db backup" minute="0" hour="0" user="root" job="backup-dbs -u root -p {{db_root_passwd}} -o {{itop_backup_dir}} {{db_name}}" state=present
+  when: itop_backup_db == True and itop_backup_encrypt == False
+
+- name: setup itop archive cronjob
+  #every day at midnigh
+  #0 0 * * * root tar -cJf itop-archive.tar.xz -C {{httpd_dir | dirname }} {{httpd_dir | basename}}
+  cron: name="itop archive backup" minute="0" hour="0" user="root" job="tar -cJf {{itop_backup_dir}}/itop-archive.tar.xz -C {{httpd_dir | dirname }} {{httpd_dir | basename}}" state=present
+  when: itop_backup_www == True and itop_backup_encrypt == False
+
+- name: setup itop db cronjob
+  cron: name="itop db backup" minute="0" hour="0" user="root" job="backup-dbs -u root -p {{db_root_passwd}} -o {{itop_backup_dir}} {{db_name}} && gpg --yes --batch --cipher-algo AES256 --passphrase={{itop_backup_encrypt_passwd}} -c {{itop_backup_dir}}/{{db_name}}.sql && rm -rf {{itop_backup_dir}}/{{db_name}}.sql" state=present
+  when: itop_backup_db == True and itop_backup_encrypt == True
+
+- name: setup itop archive cronjob
+  cron: name="itop archive backup" minute="0" hour="0" user="root" job="tar -cJf {{itop_backup_dir}}/itop-archive.tar.xz -C {{httpd_dir | dirname }} {{httpd_dir | basename}} && gpg --yes --batch --cipher-algo AES256 --passphrase={{itop_backup_encrypt_passwd}} -c {{itop_backup_dir}}/itop-archive.tar.xz && rm -rf {{itop_backup_dir}}/itop-archive.tar.xz" state=present
+  when: itop_backup_www == True and itop_backup_encrypt == True

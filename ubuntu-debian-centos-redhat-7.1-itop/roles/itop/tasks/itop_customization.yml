@@ -1,0 +1,112 @@
+---
+- name: upload custom logo
+  copy: src={{itop_portal_logo}} dest={{item}} owner={{httpd_owner}} group={{httpd_group}} mode=0775
+  with_items:
+      - /{{httpd_dir}}/images/
+      - /{{httpd_dir}}/portal/images/
+  when: itop_portal_customization_logo == True
+
+- name: backup portal images
+  command: mv {{httpd_dir}}/{{item.orig}} {{httpd_dir}}/{{item.dest}} creates={{httpd_dir}}/{{item.dest}}
+  with_items:
+      - { orig: 'images/itop-logo-external.png',  dest: 'images/itop-logo-external-orig.png' }
+      - { orig: 'portal/images/company_logo.png', dest: 'portal/images/company_logo_itop.png' }
+  when: itop_portal_customization_logo == True
+
+- name: replace portal images with custom logos
+  file: src={{httpd_dir}}/{{item.orig}} dest={{httpd_dir}}/{{item.dest}} state=link
+  with_items:
+      - { orig: 'images/{{itop_portal_logo | basename}}',        dest: 'images/itop-logo-external.png' }
+      - { orig: 'portal/images/{{itop_portal_logo | basename}}', dest: 'portal/images/company_logo.png' }
+  when: itop_portal_customization_logo == True
+
+- name: upload custom favicon
+  copy: src={{itop_favicon_logo}} dest={{item}} owner={{httpd_owner}} group={{httpd_group}} mode=0775
+  with_items:
+      - /{{httpd_dir}}/images/
+  when: itop_portal_customization_logo == True
+
+- name: backup favicon
+  command: mv {{httpd_dir}}/{{item.orig}} {{httpd_dir}}/{{item.dest}} removes={{httpd_dir}}/{{item.orig}} creates={{httpd_dir}}/{{item.dest}}
+  with_items:
+      - { orig: 'images/favicon.ico',  dest: 'images/favicon-itop.ico' }
+  when: itop_portal_customization_logo == True
+
+- name: replace original favicon with custom one
+  file: src={{httpd_dir}}/{{item.orig}} dest={{httpd_dir}}/{{item.dest}} state=link
+  with_items:
+      - { orig: 'images/{{itop_favicon_logo | basename}}', dest: 'images/favicon.ico' }
+  when: itop_portal_customization_logo == True and itop_favicon_remove == False
+
+#too slow, open a ssh connection for every file upload
+#- name: list dictionaries files
+  #raw: find {{httpd_dir}}/dictionaries -type f -iname "*.php"
+  #register: dictionaries_files
+  #when: itop_portal_customization_msg == True
+
+- name: backup itop files to be modified
+  command: cp -r {{httpd_dir}}/{{item.orig}} {{httpd_dir}}/{{item.dest}} creates={{httpd_dir}}/{{item.dest}}
+  with_items:
+      - { orig: 'application/loginwebpage.class.inc.php', dest: 'application/loginwebpage.class.inc.php.backup' }
+      - { orig: 'dictionaries/', dest: 'dictionaries.backup/' }
+  when: itop_portal_customization_msg == True
+
+- name: update portal title messages
+  lineinfile: dest={{httpd_dir}}/application/loginwebpage.class.inc.php state=present regexp="public function __construct[(]" line="public function __construct($sTitle = '{{itop_portal_welcome_title}}')"
+  when: itop_portal_customization_msg == True
+
+- name: update portal welcome messages
+  #command cannot extend *.php
+  shell: sed -i "s/.*Menu:WelcomeMenu[+].*/'Menu:WelcomeMenu+' => '{{itop_portal_welcome_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="Menu:WelcomeMenu[+]" line="'Menu:WelcomeMenu+' => '{{itop_portal_welcome_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal welcome messages
+  shell: sed -i "s/.*Menu:WelcomeMenuPage[+].*/'Menu:WelcomeMenuPage+' => '{{itop_portal_welcome_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="Menu:WelcomeMenuPage[+]" line="'Menu:WelcomeMenuPage+' => '{{itop_portal_welcome_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal welcome messages
+  shell: sed -i "s/.*UI:WelcomeMenu:Title.*/'UI:WelcomeMenu:Title' => '{{itop_portal_welcome_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="UI:WelcomeMenu:Title" line="'UI:WelcomeMenu:Title' => '{{itop_portal_welcome_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal welcome messages
+  shell: sed -i "s/.*UI:Login:Welcome.*/'UI:Login:Welcome' => '{{itop_portal_welcome_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="UI:Login:Welcome" line="'UI:Login:Welcome' => '{{itop_portal_welcome_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal welcome messages
+  shell: sed -i "s/.*UI:WelcomeToITop.*/'UI:WelcomeToITop' => '{{itop_portal_welcome_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="UI:WelcomeToITop" line="'UI:WelcomeToITop' => '{{itop_portal_welcome_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal restricted area messages
+  shell: sed -i "s/.*UI:Login:Error:AccessRestricted.*/'UI:Login:Error:AccessRestricted' => '{{itop_portal_restricted_area_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="UI:Login:Error:AccessRestricted" line="'UI:Login:Error:AccessRestricted' => '{{itop_portal_restricted_area_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: update portal bye messages
+  shell: sed -i "s/.*UI:LogOff:ThankYou.*/'UI:LogOff:ThankYou' => '{{itop_portal_goodbye_msg}}',/g" {{httpd_dir}}/dictionaries/*.php creates=/tmp/itop.sed.messages
+  #lineinfile: dest={{item}} backup=yes state=present regexp="UI:LogOff:ThankYou" line="'UI:LogOff:ThankYou' => '{{itop_portal_goodbye_msg}}',"
+  #with_items: dictionaries_files.stdout_lines
+  when: itop_portal_customization_msg == True
+
+- name: touch /tmp/itop.sed.messages
+  command: touch /tmp/itop.sed.messages creates=/tmp/itop.sed.messages
+  when: itop_portal_customization_msg == True
+
+- name: copy config-itop template
+  template: src=config-itop.php.j2 dest={{httpd_dir}}/conf/production/config-itop.php backup=yes owner={{httpd_owner}} group={{httpd_group}} mode=0770
+
+#itop setup override {{httpd_dir}}/conf/production/config-itop.php thus it's copied to a backup location to be able to diff the changes
+#upon installation, this recipe should run again to recover the original file, fix this!, itop setup should use this settings instead or
+#the installation should avoid the wizard installation step
+- name: copy config-itop template
+  template: src=config-itop.php.j2 dest={{httpd_dir}}/conf/production/config-itop.php.backup owner={{httpd_owner}} group={{httpd_group}} mode=0770

@@ -1,0 +1,107 @@
+---
+- name: download itop
+  get_url: url=http://downloads.sourceforge.net/project/itop/itop/2.2.1/iTop-2.2.1-2658.zip dest=/usr/src/iTop.zip checksum=sha1:f7cd99728ec5d2caca505fdb4c488e03597c5e4e
+
+- name: download toolkit
+  get_url: url=http://www.combodo.com/documentation/iTopDataModelToolkit-2.2.zip dest=/usr/src/iTopDataModelToolkit.zip checksum=sha1:78edcf052163483eafc5c3518a75745b379ef0b4
+
+- name: download teemip module
+  get_url: url=http://downloads.sourceforge.net/project/teemip/teemip%20-%20an%20iTop%20module/2.0.2/TeemIp-Module-2.0.2.zip dest=/usr/src/TeemIp-Module.zip checksum=sha1:3221c15044120444fea28f0baac43b10d85e4a9c
+  when: itop_install_extension_teemip == True
+
+- name: download email-reply extension
+  get_url: url=http://www.combodo.com/itop-extensions/email-reply.zip dest=/usr/src/email-reply.zip checksum=sha1:6faacbaf08d7d4f5cde9dd0fcbbc6c3f2545ab9c
+  when: itop_install_extension_email_reply == True
+
+- name: download precanned-replies extension
+  get_url: url=http://www.combodo.com/itop-extensions/precanned-replies-pro-1.0.5-111.zip dest=/usr/src/precanned-replies-pro-1.0.5-111.zip checksum=sha1:32a0f6cd82e29a86ffb4abecd5e8b7d0c2640dfc
+  when: itop_install_extension_precanned_replies == True
+
+- name: extract itop
+  unarchive: src=/usr/src/iTop.zip dest=/tmp copy=no creates=/tmp/web
+  #https://github.com/ansible/ansible-modules-core/issues/2936#issuecomment-228046000
+  environment:
+    LANG: "C"
+    LC_ALL: "C"
+    LC_MESSAGES: "C"
+
+- name: web => itop
+  shell: rm -rf {{httpd_dir}} && cp -r /tmp/web {{httpd_dir}} creates={{httpd_dir}}/application
+  when: httpd_vhost == False
+
+- name: create necessary dirs
+  file: name={{item}} owner={{httpd_owner}} group={{httpd_group}} mode=0775 state=directory recurse=yes
+  with_items:
+    - /{{httpd_dir}}/log
+    - /{{httpd_dir}}/env-production
+    - /{{httpd_dir}}/conf
+    - /{{httpd_dir}}/data
+    - /{{httpd_dir}}/extensions
+    - /{{httpd_dir}}/conf/production
+
+- name: extract toolkit
+  unarchive: src=/usr/src/iTopDataModelToolkit.zip dest={{httpd_dir}} copy=no creates={{httpd_dir}}/toolkit
+  #https://github.com/ansible/ansible-modules-core/issues/2936#issuecomment-228046000
+  environment:
+    LANG: "C"
+    LC_ALL: "C"
+    LC_MESSAGES: "C"
+
+- name: set permissions on itop/toolkit
+  file: name={{httpd_dir}}/toolkit owner=root group={{httpd_group}} mode=0775 state=directory recurse=yes
+
+- name: extract teemip
+  unarchive: src=/usr/src/TeemIp-Module.zip dest=/tmp copy=no creates=/tmp/web/extensions/teemip-config-mgmt-adaptor
+  #https://github.com/ansible/ansible-modules-core/issues/2936#issuecomment-228046000
+  environment:
+    LANG: "C"
+    LC_ALL: "C"
+    LC_MESSAGES: "C"
+  when: itop_install_extension_teemip == True
+
+- name: teemip => extensions/teemip
+  shell: cp -r /tmp/web/extensions/teemip-* {{httpd_dir}}/extensions creates={{httpd_dir}}/extensions/teemip-config-mgmt-adaptor
+  when: httpd_vhost == False
+
+- name: extract email-reply extension
+  unarchive: src=/usr/src/email-reply.zip dest={{httpd_dir}}/extensions copy=no creates={{httpd_dir}}/extensions/email-reply/
+  #https://github.com/ansible/ansible-modules-core/issues/2936#issuecomment-228046000
+  environment:
+    LANG: "C"
+    LC_ALL: "C"
+    LC_MESSAGES: "C"
+  when: itop_install_extension_email_reply == True
+
+- name: extract precanned-replies extension
+  unarchive: src=/usr/src/precanned-replies-pro-1.0.5-111.zip dest={{httpd_dir}}/extensions copy=no creates={{httpd_dir}}/extensions/precanned-replies
+  #https://github.com/ansible/ansible-modules-core/issues/2936#issuecomment-228046000
+  environment:
+    LANG: "C"
+    LC_ALL: "C"
+    LC_MESSAGES: "C"
+  when: itop_install_extension_email_reply == True and itop_install_extension_precanned_replies == True
+
+- name: set permissions on itop/extensions
+  file: name={{httpd_dir}}/extensions owner={{httpd_owner}} group={{httpd_group}} mode=0775 state=directory recurse=yes
+
+- name: setup itop cronjob
+  #https://wiki.openitop.org/doku.php?id=admin:cron
+  #*/5 * * * * root /usr/bin/php {{httpd_dir}}/webservices/cron.php --param_file=/conf/itop/params >>/var/log/itop-cron.log 2>&1
+  #every 5 minutes
+  cron: name="itop cronjob" minute="*/5" user="root" job="/usr/bin/php {{httpd_dir}}/webservices/cron.php --param_file={{httpd_dir}}/webservices/cron.distrib >>/var/log/itop-cron.log 2>&1" state=present
+
+- name: itop customization subrole
+  include: itop_customization.yml
+  when: itop_customization == True
+
+- name: itop backup subrole
+  include: itop_backup.yml
+  when: itop_backup == True
+
+- name: NEXT STEPS
+  debug: msg="Go to http://{{inventory_hostname}}/setup to finish the installation/upgrade"
+  when: itop_recovery == False
+
+- name: itop recovery subrole
+  include: itop_recovery.yml
+  when: itop_recovery == True

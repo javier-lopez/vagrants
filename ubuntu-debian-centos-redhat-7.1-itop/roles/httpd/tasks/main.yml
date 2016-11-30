@@ -1,0 +1,164 @@
+---
+- name: centos/redhat install apache
+  yum: name=httpd state=latest
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: ubuntu/debian install apache
+  apt: name=apache2 state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  when: ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'
+
+# This is absurd, there is no easy way to declare variables inside tasks files
+# Note: set_fact will survive between runs
+- name: centos/redhat set httpd variables
+  set_fact:
+      httpd_single_conf_file: /etc/httpd/conf/httpd.conf
+      httpd_group: apache
+      httpd_owner: apache
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: ubuntu/debian set httpd variables
+  set_fact:
+      httpd_single_conf_file: /etc/apache2/sites-available/000-default.conf
+      httpd_group: www-data
+      httpd_owner: www-data
+  when: ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'
+
+- name: create debian like virtualhost directory
+  file: name={{item}} owner=root group={{httpd_group}} state=directory recurse=yes
+  with_items:
+      - /etc/httpd/sites-available
+      - /etc/httpd/sites-enabled
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: configure httpd to follow previous structure
+  lineinfile: dest=/etc/httpd/conf/httpd.conf line="IncludeOptional sites-enabled/*.conf"
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: set admin contact
+  lineinfile: dest={{httpd_single_conf_file}} backup=yes regexp=^ServerAdmin line="ServerAdmin {{httpd_admin}}"
+
+- name: set httpd_dir
+  set_fact:
+    httpd_dir: /{{httpd_dir}}/{{httpd_fqdn}}
+  when: httpd_vhost == True
+
+- name: set httpd_dir
+  set_fact:
+    httpd_dir: /{{httpd_dir}}/itop
+  when: httpd_vhost == False
+
+- name: create httpd root directory for single mode
+  file: name={{httpd_dir}} owner={{httpd_owner}} group={{httpd_group}} state=directory recurse=yes
+  when: httpd_vhost == False
+
+- name: configure httpd for single mode
+  replace: dest={{httpd_single_conf_file}} backup=yes regexp='/var/www/html' replace='{{httpd_dir}}'
+  when: httpd_vhost == False
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: fix double slash www root for single mode
+  replace: dest={{httpd_single_conf_file}} regexp='"//' replace='"/'
+  when: httpd_vhost == False
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat copy virtualhost template
+  template: src=itop-virtualhost.conf.j2 dest=/etc/httpd/sites-available/{{httpd_fqdn}}.conf
+  when: httpd_vhost == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+
+- name: centos/redhat virtualhost symbolic link
+  file: src=/etc/httpd/sites-available/{{httpd_fqdn}}.conf dest=/etc/httpd/sites-enabled/{{httpd_fqdn}}.conf state=link
+  when: httpd_vhost == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+
+- name: ubuntu/debian copy virtualhost template
+  template: src=itop-virtualhost.conf.j2 dest=/etc/apache2/sites-available/{{httpd_fqdn}}.conf
+  when: httpd_vhost == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+
+- name: ubuntu/debian virtualhost symbolic link
+  file: src=/etc/httpd/sites-available/{{httpd_fqdn}}.conf dest=/etc/apache2/sites-enabled/{{httpd_fqdn}}.conf state=link
+  when: httpd_vhost == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+
+- name: create virtualhost dir
+  file: name=/var/www/{{httpd_fqdn}} state=directory group=root owner=root
+  when: httpd_vhost == True
+
+- name: create log dir
+  file: name=/var/www/{{httpd_fqdn}}/logs state=directory group=root owner=root
+  when: httpd_vhost == True
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat install apache hardening modules
+  yum: name=mod_security,mod_evasive state=latest
+  when: httpd_hardening == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: apache/debian install apache hardening modules
+  apt: name=libapache2-mod-security2,libapache2-modsecurity,libapache2-mod-evasive state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  when: httpd_hardening == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat copy hardening template
+  template: src=apache-hardening.conf.j2 dest=/etc/httpd/conf.d/apache-hardening.conf owner={{httpd_owner}} group={{httpd_group}} mode=0775
+  when: httpd_hardening == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: ubuntu/debian copy hardening template
+  template: src=apache-hardening.conf.j2 dest=/etc/apache2/conf-enabled/apache-hardening.conf owner={{httpd_owner}} group={{httpd_group}} mode=0775
+  when: httpd_hardening == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: disable indexes, cgi, includes, hardening
+  replace: dest={{httpd_single_conf_file}} regexp='Options Indexes FollowSymLinks' replace='Options -Includes -Indexes -ExecCGI'
+  when: httpd_hardening == True
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat disable apache info_module, hardening
+  replace: dest=/etc/httpd/conf.modules.d/00-base.conf regexp='^LoadModule info_module' replace='#LoadModule info_module'
+  when: httpd_hardening == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: ubuntu/debian disable apache info_module, hardening
+  command: a2dismod info
+  when: httpd_hardening == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat disable apache userdir_module, hardening
+  replace: dest=/etc/httpd/conf.modules.d/00-base.conf regexp='^LoadModule userdir_module' replace='#LoadModule userdir_module'
+  when: httpd_hardening == True and (ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: ubuntu/debian disable apache userdir_module, hardening
+  command: a2dismod userdir
+  when: httpd_hardening == True and (ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian')
+  notify:
+      - service apache centos redhat
+      - service apache ubuntu debian
+
+- name: centos/redhat restart httpd
+  shell: service httpd restart
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: ubuntu/debian restart httpd
+  shell: service apache2 restart
+  when: ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'

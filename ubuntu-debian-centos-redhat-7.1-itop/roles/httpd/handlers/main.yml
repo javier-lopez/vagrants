@@ -1,0 +1,8 @@
+---
+- name: service apache centos redhat
+  shell: service httpd stop; service httpd start && chkconfig httpd on
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: service apache ubuntu debian
+  shell: service apache2 stop; service apache2 start && update-rc.d apache2 enable
+  when: ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'

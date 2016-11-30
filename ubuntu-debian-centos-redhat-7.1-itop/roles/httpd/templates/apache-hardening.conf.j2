@@ -1,0 +1,21 @@
+#####################
+# Hardening options #
+#####################
+
+FileETag None
+ServerSignature Off
+ServerTokens Prod
+TraceEnable off
+
+<IfModule mod_headers.c>
+    Header append X-FRAME-OPTIONS "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header unset X-Powered-By
+    #Header edit Set-Cookie ^(.*)$ $1;HttpOnly;Secure
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{THE_REQUEST} !HTTP/1.1$
+    RewriteRule .* - [F]
+</IfModule>

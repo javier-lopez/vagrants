@@ -1,0 +1,8 @@
+---
+- name: service mariadb centos redhat
+  shell: service mariadb stop; service mariadb start && chkconfig mariadb on
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: service mariadb ubuntu debian
+  shell: service mysql stop; service mysql start && update-rc.d mysql enable
+  when: ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'

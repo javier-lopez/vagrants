@@ -1,0 +1,28 @@
+---
+- name: redhat - get extra epel packages, required for at least php-mcrypt
+  get_url: url=http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm dest=/usr/src/epel-release-7-5.noarch.rpm checksum=sha1:d0a57b3f6ea9987cd311d38cdaa8c2d9d3fd9d93
+  when: ansible_distribution == 'RedHat'
+
+- name: redhat - enable extra epel packages, required for at least php-mcrypt
+  yum: name=/usr/src/epel-release-7-5.noarch.rpm state=present
+  when: ansible_distribution == 'RedHat'
+
+- name: centos - enable extra epel packages, required for at least php-mcrypt
+  yum: name=epel-release state=latest
+  when: ansible_distribution == 'CentOS'
+
+- name: centos/redhat - install base packages
+  yum: name=unzip,php,php-mysql,php-mcrypt,php-xml,php-cli,php-soap,php-ldap,php-gd,graphviz state=latest
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: ubuntu/debian - install base packages
+  apt: name=unzip,php5,php5-mysql,php5-ldap,php5-mcrypt,php5-cli,php-soap,php5-gd,php5-mcrypt,graphviz state=installed install_recommends=no update_cache=yes cache_valid_time=86400
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+- name: disable SELINUX temporarily
+  shell: setenforce 0
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
+
+- name: disable SELINUX permanently
+  replace: dest=/etc/selinux/config regexp='^SELINUX=enforcing' replace='SELINUX=permissive'
+  when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'

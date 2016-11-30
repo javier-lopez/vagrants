@@ -1,0 +1,58 @@
+#apache
+httpd_dir: /var/www
+httpd_admin: admin@example.com
+httpd_vhost: False #setup single or virtualhost?
+httpd_fqdn: itop.example.com #if using virtualhost, how it should be named?
+httpd_hardening: True #a more secure apache; FileETag None, ServerSignature Off, ServerTokens Prod, etc.
+
+#mariadb/mysql
+db_install: True #or False if db is in other host
+db_host: localhost
+db_name: itop
+db_user: itop
+db_passwd: itop
+db_root_passwd: root
+
+#itop extensions
+itop_install_extension_teemip: True
+itop_install_extension_email_reply: True
+itop_install_extension_precanned_replies: True
+
+#itop customizations
+itop_customization: True #or False to skip next section
+
+#itop notifications
+#https://wiki.openitop.org/doku.php?id=admin:notifications#email_configuration
+itop_notification_method: SMTP #'SMTP' require external smtp credentials, 'PHPMail' a local smtp server
+itop_smtp_host: smtp.gmail.com
+itop_smtp_port: 587
+itop_smtp_secure_protocol: tls #or 'ssl'
+itop_mail_address: account@gmail.com
+itop_mail_passwd: passwd
+
+#itop portal customization
+itop_portal_language: "ES CR"
+itop_portal_timezone: "America/Mexico_City" #http://php.net/manual/en/timezones.php
+itop_portal_customization_logo: True #or False to keep the Itop logo
+itop_portal_logo: roles/itop/img/logo.png
+itop_favicon_remove: True #or False to replace instead of remove
+itop_favicon_logo: roles/itop/img/logo.ico
+
+itop_portal_customization_msg: True #or False to keep default welcome/restricted/bye messages
+itop_portal_welcome_title: "Company - Custom message"
+itop_portal_welcome_msg: "Welcome message"
+itop_portal_restricted_area_msg: "Custom restricted message"
+itop_portal_goodbye_msg: "Thank you for your report"
+
+#itop recovery
+itop_recovery: False #recover a previous itop instance based on db and archive backups, override customizations
+itop_recovery_db: roles/itop/recovery/itop.sql
+itop_recovery_archive: roles/itop/recovery/itop-archive.tar.xz
+
+#itop backup
+itop_backup: True #automatic db+www backup cronjobs
+itop_backup_db: True
+itop_backup_www: True
+itop_backup_dir: /var/backups/
+itop_backup_encrypt: True #encrypt backup files using a aes-256 password based method
+itop_backup_encrypt_passwd: secure_passwd
