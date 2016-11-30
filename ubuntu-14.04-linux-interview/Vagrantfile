@@ -1,0 +1,62 @@
+# vi: set ft=ruby :
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "linux-interview.example.com"  => "10.10.10.10",
+}
+
+$admin_preconditions = <<SCRIPT
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y tmux htop vim-nox git-core mercurial subversion wget curl python-software-properties python-pip build-essential g++ default-jdk ruby nodejs golang php5-cli sqlite3
+[ -f /tmp/gotty_linux_amd64.tar.gz ] || wget --progress=bar:force https://github.com/yudai/gotty/releases/download/v0.0.13/gotty_linux_amd64.tar.gz -O /tmp/gotty_linux_amd64.tar.gz
+[ -f /usr/bin/gotty ] || tar zxf /tmp/gotty_linux_amd64.tar.gz -C /usr/bin/
+SCRIPT
+
+$user_preconditions = <<SCRIPT
+mkdir -p ~/q1.dir/{or/ga/ni/za/tion,li/nu/x}
+touch ~/q1.dir/{{1,2,3,4,5}.pyc,or/{1,2,3}.pyc,or/ga/{1,2,3,4,5,6,7,8,9}.pyc,or/ga/ni/{1,2,3,4,5,6,7,8,9,0}.pyc,or/ga/ni/za/tion/{1,2,3,4,5,6,7}.pyc,li/{1,2,3}.pyc,li/nu/x/{1,2,3,4,5}.pyc}
+> ~/q3.in
+for i in $(seq 100); do echo "there is $i linux system(s) running ..., wops, error, there is 0 linux system(s) running ...)" >> ~/q3.in; done
+wget --progress=bar:force http://veekun.com/static/pokedex/downloads/veekun-pokedex.sqlite.gz
+gunzip veekun-pokedex.sqlite.gz && mv veekun-pokedex.sqlite q8.in
+SCRIPT
+
+host_counter = 0; Vagrant.configure("2") do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            machine.vm.box = "ubuntu/trusty64"
+            machine.vm.hostname = name
+            machine.vm.network :private_network, ip: ip
+            #machine.vm.network "forwarded_port", guest: 8080, host: 80
+
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.name = name
+                if vbox.name.match(/^linux/)
+                    vbox.customize ["modifyvm", :id, "--memory", 512]
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+                #elsif vbox.name == "foo"
+                    #vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                else
+                    vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                end
+            end
+
+            #authorize default public ssh keys
+            ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+            machine.vm.provision 'shell', inline: "mkdir -p /root/.ssh/"
+            machine.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /root/.ssh/authorized_keys"
+            machine.vm.provision 'shell', inline: "mkdir -p /home/vagrant/.ssh/", privileged: false
+            machine.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys", privileged: false
+
+            #entrevista preconditions
+            machine.vm.provision 'shell', inline: "cp /vagrant/linux-interview* ~", privileged: false
+            machine.vm.provision 'shell', inline: "cp /vagrant/{README.txt,q2.in}  ~", privileged: false
+            machine.vm.provision 'shell', inline: "chmod +x ~/linux-interview.test", privileged: false
+
+            machine.vm.provision "shell", inline: $admin_preconditions
+            machine.vm.provision "shell", inline: $user_preconditions, privileged: false
+        end
+    end
+end

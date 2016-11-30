@@ -1,0 +1,54 @@
+@begin{000-sample-file}
+test -f ~/q0
+@end
+
+@begin{001-remove-files-recursively}
+test "$(find ~/q1.dir -iname "*.pyc" | wc -l)" = "0"
+@end
+
+@begin{002-find-regex-pattern-in-file}
+test "$(md5sum ~/q2.out | awk '{print $1}')" = "fa84f696e31d07f55cd45cc3c9e52f3b"
+@end
+
+@begin{003-replace-regex-in-file}
+test "$(md5sum ~/q3.in | awk '{print $1}')"  = "3d0c52defcf7e7825cad50778706754f"
+@end
+
+@begin{004-add-swap}
+test $(free -m | awk '/Swap/ {print $2}') -gt "500"
+@end
+
+@begin{005-clone-repository}
+test -d ~/q5.dir/.git || test -d ~/q5.dir/.hg || ~/q5.dir/.svn
+@end
+
+@begin{006-install-webserver-8888}
+wget localhost:8888 -O ~/q6.out
+@end
+
+@begin{007-install-latest-mongodb}
+#TODO 10-06-2016 17:06 >> check mongodb version and ensure it's the latest
+test "$(mongo --quiet --eval "print('test')")" = "test"
+@end
+
+@begin{008-sql}
+test "$(md5sum ~/q8.out | awk '{print $1}')"  = "f3527f99cc6f600235ae6b562d3980d9"
+@end
+
+@begin{009-loop}
+q9.bin
+test "$(md5sum ~/q9.out | awk '{print $1}')" = "1ab47e1feb694efa2ed9799132493453"
+@end
+
+@begin{010-ipv4-filter}
+q10.bin ;                  test X"${?}" = X"1"
+q10.bin string;            test X"${?}" = X"1"
+q10.bin "1";               test X"${?}" = X"1"
+q10.bin "1.1";             test X"${?}" = X"1"
+q10.bin "1.1.1";           test X"${?}" = X"1"
+q10.bin "1.1.1.1";         test X"${?}" = X"0"
+q10.bin "a.b.c.d";         test X"${?}" = X"1"
+q10.bin "-1.1.1.1";        test X"${?}" = X"1"
+q10.bin "1.1.1.1.1";       test X"${?}" = X"1"
+q10.bin "254.254.254.255"; test X"${?}" = X"1"
+@end

@@ -1,0 +1,11 @@
+What are your favorite programs?, why?
+    Editor, Browser, Language, OS, etc
+What new technologies are in your roadmap?
+Have you ever created or contributed to any open source project?, which one(s)?
+What is Continuous Integration?
+What CI tools have you used? Example: Travis-CI.
+Have you used AWS or other cloud platforms? How long?
+Which Configuration Management tools are you most comfortable with? Examples include: Chef, Salt, Puppet, or Ansible?
+Describe the size of the biggest environment you've automated (how many servers, what technologies were involved, how was the workflow, etc)
+Which source control are you more confortable with? svn,hg,git,cvs
+What ticket system have you used, feel more confortable with?
