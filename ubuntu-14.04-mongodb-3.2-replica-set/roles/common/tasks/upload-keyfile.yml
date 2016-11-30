@@ -1,0 +1,6 @@
+---
+- name: Create mongodb keyFile directory
+  file: path={{keyFile | dirname}} state=directory recurse=yes
+
+- name: Upload keyfile
+  template: src=var##lib##mongodb-mms-automation##keyfile.j2 dest={{keyFile}}

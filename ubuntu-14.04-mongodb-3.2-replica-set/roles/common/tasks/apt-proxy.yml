@@ -1,0 +1,6 @@
+---
+
+- name: Enable apt-proxy
+  apt: name={{item}} state=installed install_recommends=no force=yes
+  with_items:
+  - squid-deb-proxy-client

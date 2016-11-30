@@ -1,0 +1,17 @@
+# mongodb
+port    : 27017
+bindIp  : 0.0.0.0
+dbPath  : /var/lib/mongodb
+engine  : wiredTiger
+logPath : /var/log/mongodb/mongodb.log
+pidPath : /var/run/mongodb/mongod-27017.pid
+repName : rep-set-01
+#keyFile : /var/lib/mongodb-mms-automation/keyfile
+
+users:
+  - username: admin
+    password: admin
+    roles: '[ { role: "root", db: "admin" } ]'
+  - username: db_example
+    password: db_example
+    roles: '[ { role: "readWrite", db: "db_example" } ]'

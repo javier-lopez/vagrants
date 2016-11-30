@@ -1,0 +1,19 @@
+rs.initiate()
+sleep(13000)
+// add additional replicate servers
+{% for host in groups['mongodb-secundary'] %}
+rs.add("{{ host }}:{{ port }}")
+sleep(8000)
+{% endfor %}
+
+{% for host in groups['mongodb-arbiter'] %}
+rs.addArb("{{ host }}:{{ port }}")
+sleep(8000)
+{% endfor %}
+
+// prefer the first mongodb as primary server
+// var cfg = rs.conf()
+// cfg.members[0].priority = 2
+// rs.reconfig(cfg)
+// ------------------------------------------
+printjson(rs.status())

@@ -1,0 +1,3 @@
+---
+- name: restart mongodb
+  shell: service mongod stop && service mongod start

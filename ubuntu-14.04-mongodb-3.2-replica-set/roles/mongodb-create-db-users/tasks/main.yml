@@ -1,0 +1,34 @@
+---
+- name: Disable temporarily authentication
+  replace: dest=/etc/mongod.conf regexp='{{item}}' replace='#{{item}}'
+  with_items:
+      - repl
+      - security
+      - authorization
+      - keyFile
+
+- name: Restart mongodb
+  shell: service mongod stop && service mongod start
+
+- name: Create script to drop all MongoDB users
+  template: src=dropAllUsers.j2 dest=/tmp/dropAllUsers.js
+
+#Iterate over all databases and delete asociated users
+- name: Drop current MongoDB users
+  shell: mongo --port {{port}} /tmp/dropAllUsers.js
+  #shell: mongo --port {{port}} --eval 'db.getMongo().getDBNames().forEach(function(i){db.getSiblingDB(i).dropAllUsers()})'
+
+- name: Create MongoDB users
+  shell: mongo --port {{port}} --eval 'db = db.getSiblingDB("admin"); db.createUser({user:"{{item.username}}", pwd:"{{item.password}}", roles:{{item.roles}}});'
+  with_items: "{{users}}"
+
+- name: Re-enable authentication
+  replace: dest=/etc/mongod.conf regexp='#{{item}}' replace='{{item}}'
+  with_items:
+      - repl
+      - security
+      - authorization
+      - keyFile
+
+- name: Restart mongodb
+  shell: service mongod stop && service mongod start

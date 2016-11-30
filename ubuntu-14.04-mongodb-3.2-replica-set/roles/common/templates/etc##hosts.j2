@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+127.0.0.1 localhost
+
+{% for host in groups['all'] %}
+{% set short_host = host.split('.') %}
+{{ hostvars[host].ansible_default_ipv4.address }} {{ host }} {{ short_host[0] }}
+{% endfor %}

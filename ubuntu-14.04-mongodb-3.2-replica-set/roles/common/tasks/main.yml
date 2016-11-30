@@ -1,0 +1,7 @@
+---
+#Doesn't work with vagrant
+#http://superuser.com/questions/991711/vagrant-virtualbox-doesnt-setup-correct-gateway
+#- include: hosts.yml
+- include: apt-proxy.yml
+- include: upload-keyfile.yml
+  when: keyFile is defined

@@ -1,0 +1,12 @@
+---
+- name: Create script to initialize mongo cluster
+  template: src=repInit.j2 dest=/tmp/repInit.js
+
+- name: Initialize the mongo cluster replication set [undefined users]
+  shell: mongo --port "{{ port }}" /tmp/repInit.j2
+  when: users is undefined
+
+- name: Initialize the mongo cluster replication set [defined users]
+  shell: mongo localhost:"{{port}}"/admin -u "{{item.username}}" -p "{{item.password}}"  /tmp/repInit.js
+  with_items: "{{users}}"
+  when: item.username == 'admin'

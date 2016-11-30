@@ -1,0 +1,35 @@
+---
+- name: Create mongodb directory
+  file: path={{dbPath}} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
+  when: dbPath is defined
+
+- name: Create mongodb runtime directory
+  file: path={{pidPath | dirname}} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
+  when: pidPath is defined
+
+- name: Create mongodb log directory
+  file: path={{logPath | dirname}} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
+  when: logPath is defined
+
+- name: Create mongodb keyFile directory
+  file: path={{keyFile | dirname}} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
+  when: keyFile is defined
+
+- name: Ensure right keyFile permitions
+  file: path={{keyFile}} owner=mongodb group=mongodb mode=0600 owner=mongodb group=mongodb mode=0600
+  when: keyFile is defined
+
+- name: Stop MongoDB
+  shell: service mongod stop
+
+- name: Configure upstart init script - [ubuntu/debian]
+  replace: dest=/etc/init/mongod.conf regexp='/var/run/mongodb.pid' replace='{{pidPath}}'
+  when:
+      - pidPath is defined
+      - ansible_distribution == 'Ubuntu' or  ansible_distribution == 'Debian'
+
+- name: Set replication mongodb settings
+  template: src=etc##mongod.conf.j2 dest=/etc/mongod.conf owner=root group=root mode=0644
+
+- name: Start MongoDB
+  shell: service mongod start

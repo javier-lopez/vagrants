@@ -1,0 +1,18 @@
+---
+- hosts: all
+  roles:
+    - common
+    - mongodb
+
+- hosts: mongodb-primary:mongodb-secundary
+  roles:
+    - mongodb-replica
+
+- hosts: mongodb-arbiter
+  roles:
+    - mongodb-arbiter
+
+- hosts: mongodb-primary
+  roles:
+    - mongodb-create-db-users
+    - mongodb-primary

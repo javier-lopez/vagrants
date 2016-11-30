@@ -1,0 +1,8 @@
+[mongodb-primary]
+mongodb-01.example.com ansible_user=ansible
+
+[mongodb-secundary]
+mongodb-02.example.com ansible_user=ansible
+
+[mongodb-arbiter]
+mongodb-03.example.com ansible_user=ansible
