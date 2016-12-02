@@ -1,0 +1,11 @@
+What are your favorite programs?, why?
+    OS, Language, Browser, IDE, Editor, etc
+Which technologies are in your roadmap?
+What is a good website for you?, give examples
+Can you describe the workflow you use when you create a web page?
+How would you optimize a websites assets/resources?
+Have you worked with JS libraries?, which ones?
+Which source control are you more confortable with? svn,hg,git,cvs?
+What is Continuous Integration?
+Which CI tools have you used? Example: travis, jenkins?
+Do you have github?, who/which projects do you follow?

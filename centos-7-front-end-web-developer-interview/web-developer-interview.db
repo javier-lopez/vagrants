@@ -1,0 +1,24 @@
+@begin{000-sample-file}
+test -f ~/q0
+@end
+
+@begin{001-remove-files-recursively}
+test "$(find ~/q1.dir -iname "*.pyc" | wc -l)" = "0"
+@end
+
+@begin{002-clone-repository}
+test -d ~/q2.dir/.git && test -f ~/q2.dir/tips.json && grep "homepage" ~/q2.dir/package.json >/dev/null
+@end
+
+@begin{003-fixup-html}
+tidy ~/q3.html
+@end
+
+@begin{004-program-loop}
+q4.bin
+test "$(md5sum ~/q4.out | awk '{print $1}')"  = "184225794d4210f2099584016e862da3"
+@end
+
+@begin{005-sql-query}
+test "$(md5sum ~/q5.out | awk '{print $1}')"  = "f3527f99cc6f600235ae6b562d3980d9"
+@end

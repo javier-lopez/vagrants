@@ -1,0 +1,202 @@
+# vi: set ft=ruby :
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "front-end-web-developer-interview.example.com"  => "10.10.10.10",
+}
+
+$admin_preconditions = <<SCRIPT
+setenforce Permissive #disable temporalely selinux
+yum install -y epel-release
+yum install -y mariadb-server mariadb tmux htop vim git wget unzip nginx php php-common php-mysql php-fpm php-cli sqlite
+sed -i 's:^listen =.*:listen = /var/run/php-fpm/php-fpm.sock:g' /etc/php-fpm.d/www.conf
+sed -i 's:apache:vagrant:g'    /etc/php-fpm.d/www.conf
+systemctl start php-fpm
+cat > /etc/nginx/conf.d/default.conf << 'E=O=F'
+server {
+    listen       80;
+    server_name  localhost;
+    root         /home/vagrant;
+    index index.php index.html index.htm;
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+E=O=F
+cat > /etc/nginx/nginx.conf << 'E=O=F'
+user vagrant;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+    include /etc/nginx/conf.d/*.conf;
+}
+E=O=F
+systemctl restart nginx
+systemctl start mariadb
+chown -R vagrant /var/lib/php/session
+wget -q http://binaries.html-tidy.org/binaries/tidy-5.2.0/tidy-5.2.0-64bit.rpm -O /tmp/tidy-5.2.0-64bit.rpm
+rpm -i /tmp/tidy-5.2.0-64bit.rpm
+wget -q https://github.com/tmate-io/tmate/releases/download/2.2.1/tmate-2.2.1-static-linux-amd64.tar.gz -O /tmp/tmate.tar.gz
+(cd /tmp && tar zxvf /tmp/tmate.tar.gz)
+chmod +x /tmp/tmate-2.2.1-static-linux-amd64/tmate
+mv       /tmp/tmate-2.2.1-static-linux-amd64/tmate /usr/bin/
+SCRIPT
+
+$user_preconditions = <<SCRIPT
+cat > ~/q3.html << 'E=O=F'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Organization</title>
+  </head>
+  <body>
+    <paragraph>Welcome to Organization!</paragraph>
+    <ol>
+      <em><li><a href="#logo">List of partners</a></li></em>
+      <li><a href="#employees">List of employees</a></li>
+    </ol>
+
+    <h1>
+    <paragraph>Partners:</paragraph>
+    <ul>
+      <li>RedHat:</li><img source="redhat.gif"/>
+      <li>Oracle:</li><img source="oracle.gif"/>
+    </ul>
+
+    <h1>List of employees
+    <thead>
+      <th>First name</th>
+      <th>Last name</th>
+    </thead>
+    <table>
+      <tr>
+        <td>Gail</td>
+        <td>Dixon</td>
+      </tr>
+      <tr>
+        <td>Erin</td>
+        <td>Hardy</td>
+      </tr>
+    </table>
+  </body>
+</html>
+E=O=F
+
+mkdir -p ~/q1.dir/or/ga/ni/za/tion
+touch ~/q1.dir/{{1,2,3,4,5}.pyc,or/{1,2,3}.pyc,or/ga/{1,2,3,4,5,6,7,8,9}.pyc,or/ga/ni/{1,2,3,4,5,6,7,8,9,0}.pyc,or/ga/ni/za/tion/{1,2,3,4,5,6,7}.pyc}
+
+cp /usr/share/nginx/html/* ~
+#wget -q https://www.adminer.org/static/download/4.2.5/adminer-4.2.5-en.php -O ~/sql.php
+#chown nginx /home/vagrant/sql.php
+wget -q https://github.com/calvinlough/sqlbuddy/raw/gh-pages/sqlbuddy.zip   -O ~/sqlbuddy.zip
+unzip  ~/sqlbuddy.zip -d ~ >/dev/null
+rm -rf ~/sqlbuddy.zip && mv ~/sqlbuddy ~/sql
+
+wget --progress=bar:force http://veekun.com/static/pokedex/downloads/veekun-pokedex.sqlite.gz
+gunzip veekun-pokedex.sqlite.gz && mv veekun-pokedex.sqlite q5.in
+cat /dev/zero | ssh-keygen -q -N ""
+echo '<?php phpinfo(); ?>' > ~/info.php
+wget -q -O- http://localhost/info.php | tail -15 && rm -rf ~/info.php
+SCRIPT
+
+# Cross-platform way of finding an executable in the $PATH.
+def which(cmd)
+    exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+    ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+            exe = File.join(path, "#{cmd}#{ext}")
+            return exe if File.executable?(exe) && !File.directory?(exe)
+        end
+    end
+    nil
+end
+
+host_counter = 0; Vagrant.configure("2") do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            machine.vm.box = "centos/7"
+            #machine.vm.box = "ubuntu/trusty64" #mysql won't install without interactively set a root password
+            machine.vm.hostname = name
+            machine.vm.network :private_network, ip: ip
+            machine.vm.network "forwarded_port", guest: 80, host: 8080
+
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.name = name
+                if vbox.name.match(/^core/)
+                    vbox.customize ["modifyvm", :id, "--memory", 512]
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+                #elsif vbox.name == "foo"
+                    #vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                else
+                    vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
+                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
+                end
+            end
+
+            if machine.vm.box.match(/^centos/)
+                if !which('rsync') #Windows case
+                    machine.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+                    machine.vm.provision 'shell', inline: "rm -rf /vagrant /vagrant-tmp"
+                    machine.vm.provision 'shell', inline: "mkdir -p /vagrant /vagrant-tmp"
+                    machine.vm.provision 'shell', inline: "chown -R vagrant:vagrant /vagrant /vagrant-tmp"
+                    machine.vm.provision "file", source: ".", destination: "/vagrant-tmp/"
+                    machine.vm.provision 'shell', inline: "mv /vagrant-tmp/*/* /vagrant/"
+                    machine.vm.provision 'shell', inline: "mv /vagrant-tmp/*/.vagrant /vagrant/"
+                    machine.vm.provision 'shell', inline: "rm -rf /vagrant-tmp"
+                    machine.vm.provision 'shell', inline: "ln -s /vagrant/ /home/vagrant/vagrant"
+                end
+            end
+
+            #authorize default public ssh keys
+            machine.vm.provision 'shell', inline: "mkdir -p /root/.ssh/"
+            machine.vm.provision 'shell', inline: "mkdir -p /home/vagrant/.ssh/", privileged: false
+            if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
+                ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys"
+                machine.vm.provision 'shell', inline: "printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys", privileged: false
+            end
+
+            #preconditions
+            machine.vm.provision 'shell', inline: "cp /vagrant/web-developer-interview* ~", privileged: false
+            machine.vm.provision 'shell', inline: "cp /vagrant/README.txt  ~", privileged: false
+            machine.vm.provision 'shell', inline: "chmod +x ~/web-developer-interview.test", privileged: false
+
+            machine.vm.provision "shell", inline: $admin_preconditions
+            machine.vm.provision "shell", inline: $user_preconditions, privileged: false
+        end
+    end
+end
