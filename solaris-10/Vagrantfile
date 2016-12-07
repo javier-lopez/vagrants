@@ -13,11 +13,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             #machine.vm.hostname = name
             #machine.vm.network :private_network, ip: ip
 
-            #machine.vm.provider "virtualbox" do |vbox|
-                #vbox.name = name
-                #vbox.customize ["modifyvm", :id, "--memory", 2048]
-                #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
-            #end
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.name = name
+                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
+                vbox.customize ["modifyvm", :id, "--memory", 512]
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+            end
 
             #machine.vm.provision 'shell', path: "provision.sh"
         end

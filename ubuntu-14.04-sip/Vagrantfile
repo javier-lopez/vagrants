@@ -29,6 +29,7 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
             machine.vm.provider "virtualbox" do |vbox|
                 vbox.name = name
+                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
                 if vbox.name.match(/^sip/)
                     vbox.customize ["modifyvm", :id, "--memory", 512]
                     vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
