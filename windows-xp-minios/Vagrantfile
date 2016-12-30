@@ -1,0 +1,35 @@
+# vi: set ft=ruby :
+VAGRANTFILE_API_VERSION = '2'
+
+hosts = {
+    #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
+    "xp.example.com"  => "10.10.10.10",
+}
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |name, ip|
+        config.vm.define name do |machine|
+            machine.vm.box          = "xp-minios"
+            machine.vm.box_url      = "http://f.javier.io/public/vagrant/xp-minios.box"
+            machine.vm.hostname     = name
+            machine.vm.guest        = :windows
+            machine.vm.communicator = "ssh"
+
+            #network
+            machine.vm.network :private_network, ip: ip
+            #ssh
+            machine.vm.network :forwarded_port, guest: 22, host: 2222, id: "ssh", auto_correct: true
+            #rdp
+            machine.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct: true
+
+            machine.vm.provider "virtualbox" do |vbox|
+                vbox.gui  = true
+                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
+                #vbox.customize ["modifyvm", :id, "--memory", 2048]
+                #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+            end
+
+            #machine.vm.provision 'shell', path: "provision.sh"
+        end
+    end
+end
