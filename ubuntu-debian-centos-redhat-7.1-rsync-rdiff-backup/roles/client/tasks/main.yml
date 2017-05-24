@@ -16,7 +16,7 @@
   when: ansible_distribution == 'CentOS' or  ansible_distribution == 'RedHat'
 
 - name: get backup-remote-rsync script
-  get_url: url=https://raw.githubusercontent.com/chilicuil/learn/master/sh/tools/backup-remote-rsync dest=/usr/bin/backup-remote-rsync mode=0755 validate_certs=no
+  get_url: url=https://raw.githubusercontent.com/javier-lopez/learn/master/sh/tools/backup-remote-rsync dest=/usr/bin/backup-remote-rsync mode=0755 validate_certs=no
 
 - name: add backup cronjobs
   cron:
