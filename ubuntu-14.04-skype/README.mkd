@@ -1,6 +1,0 @@
-About
------
-
-Skype on X less, audioless server, automatizate calls.
-
-Status: On progress

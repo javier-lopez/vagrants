@@ -1,9 +1,14 @@
 # vi: set ft=ruby :
 VAGRANTFILE_API_VERSION = '2'
+Vagrant.require_version '>= 1.8.2'
 
+CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
+DIRNAME     = File.basename(CURRENT_DIR)
+
+#host  = RbConfig::CONFIG['host_os']
 hosts = {
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "xp.example.com"  => "10.10.10.10",
+    "#{DIRNAME}.example.com"  => "10.10.10.10",
 }
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -11,16 +16,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config.vm.define name do |machine|
             machine.vm.box          = "xp-minios"
             machine.vm.box_url      = "http://f.javier.io/public/vagrant/xp-minios.box"
-            machine.vm.hostname     = name
+            machine.vm.hostname     =  name
             machine.vm.guest        = :windows
             machine.vm.communicator = "ssh"
 
             #network
             machine.vm.network :private_network, ip: ip
-            #ssh
-            machine.vm.network :forwarded_port, guest: 22, host: 2222, id: "ssh", auto_correct: true
-            #rdp
-            machine.vm.network :forwarded_port, guest: 3389, host: 3389, id: "rdp", auto_correct: true
+            machine.vm.network :forwarded_port, guest: 22, host: 2222, auto_correct: true,   id: "ssh"
+            machine.vm.network :forwarded_port, guest: 3389, host: 3389, auto_correct: true, id: "rdp"
 
             machine.vm.provider "virtualbox" do |vbox|
                 vbox.gui  = true
@@ -28,8 +31,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 #vbox.customize ["modifyvm", :id, "--memory", 2048]
                 #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
             end
-
-            #machine.vm.provision 'shell', path: "provision.sh"
         end
     end
 end

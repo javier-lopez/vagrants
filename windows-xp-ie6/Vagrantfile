@@ -1,9 +1,14 @@
 # vi: set ft=ruby :
 VAGRANTFILE_API_VERSION = '2'
+Vagrant.require_version '>= 1.8.2'
 
+CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
+DIRNAME     = File.basename(CURRENT_DIR)
+
+#host  = RbConfig::CONFIG['host_os']
 hosts = {
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "xp-ie6.example.com"  => "10.10.10.10",
+    "#{DIRNAME}.example.com"  => "10.10.10.10",
 }
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -11,7 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config.vm.define name do |machine|
             machine.vm.box          = "xp-ie6"
             machine.vm.box_url      = "http://aka.ms/vagrant-xp-ie6"
-            machine.vm.hostname     = name
+            machine.vm.hostname     =  name
             machine.vm.guest        = :windows
             machine.vm.communicator = "winrm"
             machine.vm.network :private_network, ip: ip
@@ -23,8 +28,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 #vbox.customize ["modifyvm", :id, "--memory", 2048]
                 #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
             end
-
-            #machine.vm.provision 'shell', path: "provision.sh"
         end
     end
 end

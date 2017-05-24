@@ -1,24 +1,23 @@
 #!/bin/sh
-set -e
-printf "%s\\n" "$0"
+set -xe
 
 if ! command -v "mysql"; then
-    if ! yum repolist enabled | grep "mysql.*-community.*" > /dev/null; then
-        yum -y install http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm || \
-        yum -y install /vagrant/deploy/local_archive/mysql-community-release-el7-5.noarch.rpm
+    if ! sudo yum repolist enabled | grep "mysql.*-community.*" > /dev/null; then
+        sudo yum -y install http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm || \
+        sudo yum -y install /vagrant/deploy/local_archive/mysql-community-release-el7-5.noarch.rpm
     fi
-    yum repolist enabled | grep "mysql.*-community.*" > /dev/null
-    yum -y install mysql-community-server || rpm -Uvh /vagrant/deploy/local_archive/mysql_pkgs/*.rpm
+    sudo yum repolist enabled | grep "mysql.*-community.*" > /dev/null
+    sudo yum -y install mysql-community-server || sudo rpm -Uvh /vagrant/deploy/local_archive/mysql_pkgs/*.rpm
 fi
 
 #disable this on production
-printf "%s\\n" "bind-address = 0.0.0.0" >> /etc/my.cnf
-systemctl restart firewalld.service
-firewall-cmd --permanent --zone=public --add-port=3306/tcp
-systemctl restart firewalld.service
+printf "%s\\n" "bind-address = 0.0.0.0" | sudo tee -a /etc/my.cnf
+sudo systemctl restart firewalld.service
+sudo firewall-cmd --permanent --zone=public --add-port=3306/tcp
+sudo systemctl restart firewalld.service
 
-systemctl restart mysqld
-systemctl enable mysqld.service
+sudo systemctl restart mysqld
+sudo systemctl enable mysqld.service
 
 #user + scheme installation
 #DB="emotic"; DB_USER="javanes"; DB_PASSWD="Ach1z0#d"
