@@ -1,15 +1,7 @@
 #!/bin/sh
 set -xe
 
-[ -d /vagrant ] && cd /vagrant
-
-#prevent http://stackoverflow.com/questions/16748737/grunt-watch-error-waiting-fatal-error-watch-enospc
-npm dedupe
-grep 'fs.inotify.max_user_watches=524288' /etc/sysctl.conf || \
-    printf "%s\\n" 'fs.inotify.max_user_watches=524288' | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
-
-#ensure that user vagrant owns everything in /vagrant
-[ -d /vagrant ] && chown -R vagrant:vagrant /vagrant/* /vagrant/.[!.]*
+test -f /etc/udev/rules.d/51-android.rules && exit || :
 
 #add extra usb rules, http://askubuntu.com/questions/461729/ubuntu-is-not-detecting-my-android-device
 cat << EOF | sudo tee /etc/udev/rules.d/51-android.rules
