@@ -15,7 +15,8 @@ hosts = {
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     hosts.each do |name, ip|
         config.vm.define name do |machine|
-            machine.vm.box = "ubuntu/xenial64"
+            #machine.vm.box = "ubuntu/xenial64" #https://bugs.launchpad.net/cloud-images/+bug/1569237
+            machine.vm.box = "bento/ubuntu-16.04"
             machine.vm.hostname = name
             machine.vm.network :private_network, ip: ip
 
