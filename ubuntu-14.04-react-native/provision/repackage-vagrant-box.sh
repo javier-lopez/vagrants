@@ -12,7 +12,7 @@ cp   "${CURRENT_DIR}"/../Vagrantfile "${CURRENT_DIR}"/../Vagrantfile.bk
 trap 'mv "${CURRENT_DIR}"/../Vagrantfile.bk  "${CURRENT_DIR}"/../Vagrantfile' INT TERM HUP EXIT
 
 #disable custom ssh rule to allow `vagrant ssh -c` commands
-sed -i '/guest: 22/d'                                                              "${CURRENT_DIR}"/../Vagrantfile
+sed -i '/guest: 22,/d'                                                              "${CURRENT_DIR}"/../Vagrantfile
 
 #use original base-image to build upon
 sed -i 's:#\(machine.vm.box = .*\) #base-image$:\1 #base-image:'                   "${CURRENT_DIR}"/../Vagrantfile

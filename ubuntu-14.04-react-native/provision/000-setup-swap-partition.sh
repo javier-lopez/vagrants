@@ -3,9 +3,10 @@ set -xe
 
 swapsize="2G"
 
-#does the swap file already exist?
-if grep "swapfile" /etc/fstab >/dev/null 2>&1; then
+#does the swap file/partition already exist?
+if [ "$(swapon -s | wc -l)" -gt "1" ]; then
     printf "%s\\n" 'Swapfile found. No changes made.'
+    swapon -s
 else
     printf "%s\\n" 'Swapfile missing. Setting it up ...'
     sudo fallocate -l "${swapsize}" /swapfile
