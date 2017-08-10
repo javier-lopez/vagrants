@@ -14,16 +14,57 @@ hosts = {
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     hosts.each do |name, ip|
         config.vm.define name do |machine|
-            machine.vm.box = "Microsoft/EdgeOnWindows10"
-            #machine.vm.hostname = name
-            #machine.vm.network :private_network, ip: ip
+            machine.vm.box          = "jhakonen/windows-10-n-pro-en-x86_64"
+            #machine.vm.box         = "giorgioinf/win10N-shell"
+            #machine.vm.box         = "Microsoft/EdgeOnWindows10" #winrm integration broken
+            machine.vm.guest        = :windows
+            machine.vm.communicator = "winrm"
+
+            #network
+            machine.vm.network :private_network, ip: ip
+            #machine.vm.network :forwarded_port, guest: 22, host: 2222, auto_correct: true,   id: "ssh"
+            #machine.vm.network :forwarded_port, guest: 3389, host: 3389, auto_correct: true, id: "rdp"
 
             machine.vm.provider "virtualbox" do |vbox|
                 vbox.name = name
+                vbox.gui  = true
                 vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-                #vbox.customize ["modifyvm", :id, "--memory", 2048]
+                vbox.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+                vbox.customize ["modifyvm", :id, "--memory", 2048]
                 #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
             end
+
+            #$ vagrant plugin install vagrant-hosts
+            if Vagrant.has_plugin?('vagrant-hosts')
+                machine.vm.provision :hosts, sync_hosts: true
+            elsif Vagrant.has_plugin?('vagrant-hostmanager')
+                machine.hostmanager.enabled     = true
+                machine.hostmanager.manage_host = true
+                machine.hostmanager.aliases     = aliases
+            end
+
+            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+            CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+            CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+            CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+            CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+            CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+            CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+
+            #provision
+            Dir.glob("#{CURRENT_DIR}/provision/0*.ps1").sort.each { |provision_script|
+                CMD_SCRIPT_ROOT.call(provision_script)
+            }
+
+            #optional
+            Dir.glob("#{CURRENT_DIR}/provision/extra-*.ps1").sort.each { |provision_script|
+                CMD_SCRIPT_ROOT.call(provision_script)
+            }
+
+            #recurrent jobs
+            Dir.glob("#{CURRENT_DIR}/provision/always-*.ps1").sort.each { |provision_script|
+                CMD_SCRIPT_ALWAYS_ROOT.call(provision_script)
+            }
         end
     end
 end
