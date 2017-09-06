@@ -1,0 +1,8 @@
+cp /vagrant/fmw*.jar ~
+java -jar fmw_12.2.1.2.0_wls_quick.jar
+. wls12212/wlserver/server/bin/setWLSEnv.sh
+mkdir domain
+cd domain
+java weblogic.Server #ctrl-c
+bash startWebLogic.sh
+
