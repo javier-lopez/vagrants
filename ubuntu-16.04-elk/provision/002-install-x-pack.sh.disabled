@@ -1,0 +1,5 @@
+#!/bin/sh
+set -xe
+
+(cd elastic* && yes | bin/elasticsearch-plugin install x-pack)
+(cd kibana*  && yes | bin/kibana-plugin install x-pack)

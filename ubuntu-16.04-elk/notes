@@ -1,0 +1,3 @@
+https://www.elastic.co/guide/en/kibana/current/advanced-options.html
+https://discuss.elastic.co/t/advanced-settings-via-config-file-possible/68862/2
+    truncate:maxHeight = 0 #show all msg
