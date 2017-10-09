@@ -14,8 +14,8 @@ hosts = {
     #"rhel7-03.example.com" => "10.10.10.13",
 }
 
-#vagrant-hosts automatically edit hosts files to let vms communicate by domain
-#raise "vagrant-hosts plugin must be installed: $ vagrant plugin install vagrant-hosts" unless Vagrant.has_plugin? "vagrant-hosts"
+#vagrant-hostmanager automatically edit hosts files to let vms communicate by domain
+raise "vagrant-hostmanager plugin must be installed: $ vagrant plugin install vagrant-hostmanager" unless Vagrant.has_plugin? "vagrant-hostmanager"
 
 #cross-platform way of finding an executable in the $PATH.
 def which(cmd)
@@ -39,17 +39,11 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             machine.vm.provider "virtualbox" do |vbox|
                 vbox.name = name
                 vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/ or Vagrant::VERSION =~ /^2.0/
-                vbox.customize ["modifyvm", :id, "--memory", 1024]          #MB
+                #vbox.customize ["modifyvm", :id, "--memory", 1024]         #MB
+                vbox.customize ["modifyvm", :id, "--memory", 512]           #MB
                 vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
-            end
-
-            #$ vagrant plugin install vagrant-hosts
-            if Vagrant.has_plugin?('vagrant-hosts')
-                machine.vm.provision :hosts, sync_hosts: true
-            elsif Vagrant.has_plugin?('vagrant-hostmanager')
-                machine.hostmanager.enabled     = true
-                machine.hostmanager.manage_host = true
-                machine.hostmanager.aliases     = aliases
+                vbox.customize ["modifyvm", :id, "--usb",   "off"]          #disable usb/audio for good
+                vbox.customize ["modifyvm", :id, "--audio", "none"]
             end
 
             if host_counter == 0
@@ -63,34 +57,34 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             end
 
             #authorize default public ssh key
-            CMD_INLINE_ROOT.call("mkdir -p /root/.ssh/")
-            CMD_INLINE.call     ("mkdir -p /home/vagrant/.ssh/")
-            if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
-                ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
-                CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
-                CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
-            end
+            #CMD_INLINE_ROOT.call("mkdir -p /root/.ssh/")
+            #CMD_INLINE.call     ("mkdir -p /home/vagrant/.ssh/")
+            #if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
+                #ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+                #CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
+                #CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
+            #end
 
             #copy private ssh key
-            if File.file?("#{Dir.home}/.ssh/id_rsa")
-                machine.vm.provision "file",  source: "~/.ssh/id_rsa", destination: "/home/vagrant/.ssh/id_rsa"
-                CMD_INLINE.call("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
-                CMD_INLINE.call("chmod 600 /home/vagrant/.ssh/id_rsa")
-            else
-                if File.file?("ansible-local/ansible-local.pub")
-                    ssh_pub_key = File.readlines("ansible-local/ansible-local.pub").first.strip
-                    CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
-                    CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
-                    machine.vm.provision "file",  source: "ansible-local/ansible-local.priv", destination: "/home/vagrant/.ssh/id_rsa"
-                    CMD_INLINE.call     ("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
-                    CMD_INLINE.call     ("chmod 600 /home/vagrant/.ssh/id_rsa")
-                end
-            end
+            #if File.file?("#{Dir.home}/.ssh/id_rsa")
+                #machine.vm.provision "file",  source: "~/.ssh/id_rsa", destination: "/home/vagrant/.ssh/id_rsa"
+                #CMD_INLINE.call("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
+                #CMD_INLINE.call("chmod 600 /home/vagrant/.ssh/id_rsa")
+            #else
+                #if File.file?("ansible-local/ansible-local.pub")
+                    #ssh_pub_key = File.readlines("ansible-local/ansible-local.pub").first.strip
+                    #CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
+                    #CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
+                    #machine.vm.provision "file",  source: "ansible-local/ansible-local.priv", destination: "/home/vagrant/.ssh/id_rsa"
+                    #CMD_INLINE.call     ("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
+                    #CMD_INLINE.call     ("chmod 600 /home/vagrant/.ssh/id_rsa")
+                #end
+            #end
 
             #copy gitconfig
-            if File.file?("#{Dir.home}/.gitconfig")
-                machine.vm.provision "file",  source: "~/.gitconfig", destination: "/home/vagrant/.gitconfig"
-            end
+            #if File.file?("#{Dir.home}/.gitconfig")
+                #machine.vm.provision "file",  source: "~/.gitconfig", destination: "/home/vagrant/.gitconfig"
+            #end
 
             #only execute ansible when all hosts are ready and a recipe exists
             host_counter = host_counter + 1; if File.file?("ansible.yml")
@@ -124,7 +118,9 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                     end
                 end
             end
-
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end
