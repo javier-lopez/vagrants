@@ -11,6 +11,9 @@ hosts = {
     "#{DIRNAME}.example.com"  => "10.10.10.10",
 }
 
+#vagrant-hostmanager automatically edit hosts files to let vms communicate by domain
+#raise "vagrant-hostmanager plugin must be installed: $ vagrant plugin install vagrant-hostmanager" unless Vagrant.has_plugin? "vagrant-hostmanager"
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     hosts.each do |name, ip|
         config.vm.define name do |machine|
@@ -32,15 +35,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 vbox.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
                 vbox.customize ["modifyvm", :id, "--memory", 2048]
                 #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
-            end
-
-            #$ vagrant plugin install vagrant-hosts
-            if Vagrant.has_plugin?('vagrant-hosts')
-                machine.vm.provision :hosts, sync_hosts: true
-            elsif Vagrant.has_plugin?('vagrant-hostmanager')
-                machine.hostmanager.enabled     = true
-                machine.hostmanager.manage_host = true
-                #machine.hostmanager.aliases     = aliases
             end
 
             #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
@@ -67,4 +61,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             }
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end
