@@ -32,7 +32,7 @@ end
 host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     hosts.each do |name, ip|
         config.vm.define name do |machine|
-            machine.vm.box      = "rhel-7.4" #https://github.com/javier-lopez/packers/blob/master/rhel7/rhel-7.4-vbox.json
+            machine.vm.box      = "javier-lopez/rhel-7.4" #https://github.com/javier-lopez/packers/blob/master/rhel7/rhel-7.4-vbox.json
             machine.vm.hostname = name
             machine.vm.network :private_network, ip: ip
 
