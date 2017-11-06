@@ -5,41 +5,44 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-#host  = RbConfig::CONFIG['host_os']
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name  => "#{DIRNAME}.example.com",
+        :box   => "javier-lopez/openbsd-6.2",
+        :ram   => "512", :cpus  => "1",
+        :ip    => "10.10.10.11",
+    },
+]
 
-#vagrant-hostmanager automatically edit hosts files to let vms communicate by domain
-#raise "vagrant-hostmanager plugin must be installed: $ vagrant plugin install vagrant-hostmanager" unless Vagrant.has_plugin? "vagrant-hostmanager"
-
-#cross-platform way of finding an executable in the $PATH.
-def which(cmd)
-    exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
-    ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
-        exts.each do |ext|
-            exe = File.join(path, "#{cmd}#{ext}")
-            return exe if File.executable?(exe) && !File.directory?(exe)
-        end
-    end
-    nil
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
 end
 
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
+
 host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box      = "javier-lopez/openbsd-6.2"
-            machine.vm.hostname = name
-            machine.vm.network :private_network, ip: ip
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box      = host[:box]
+            machine.vm.box_url  = host[:box_url] if host[:box_url]
+            machine.vm.hostname = host[:name]
+            machine.vm.network :private_network, ip: host[:ip]
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.name = name
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/ or Vagrant::VERSION =~ /^2.0/
-                #vbox.customize ["modifyvm", :id, "--memory", 1024]         #MB
-                vbox.customize ["modifyvm", :id, "--memory", 512]           #MB
-                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
-                vbox.customize ["modifyvm", :id, "--usb",   "off"]          #disable usb/audio for good
+                vbox.name = host[:name]
+                vbox.linked_clone = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
+                vbox.customize ["modifyvm", :id, "--usb",   "off"]  #disable usb/audio for good
                 vbox.customize ["modifyvm", :id, "--audio", "none"]
             end
 
@@ -82,39 +85,6 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             #if File.file?("#{Dir.home}/.gitconfig")
                 #machine.vm.provision "file",  source: "~/.gitconfig", destination: "/home/vagrant/.gitconfig"
             #end
-
-            #only execute ansible when all hosts are ready and a recipe exists
-            host_counter = host_counter + 1; if File.file?("ansible.yml")
-                if host_counter == hosts.length
-                    if which('ansible-playbook') #use locally installed ansible if available
-                        machine.vm.provision "ansible" do |ansible|
-                            ansible.verbose  = "vvv"
-                            ansible.playbook = "ansible.yml"
-                            ansible.inventory_path = "dev.hosts"
-                            ansible.limit          = "all"
-                            #ansible.sudo           = true
-                            #ansible.raw_arguments  = [
-                                 #"--connection=paramiko",
-                                #"--private-key=/vagrant/.vagrant/machines/.../private_key"
-                            #]
-                            #ansible.galaxy_role_file = "requirements.yml"
-                        end
-                    else #otherwise install ansible and use it from the last vm, windows case?
-                        machine.vm.provision "ansible_local" do |ansible|
-                            ansible.verbose        = "vvv"
-                            ansible.playbook       = "ansible.yml"
-                            ansible.inventory_path = "dev.hosts"
-                            ansible.limit          = "all"
-                            #ansible.sudo           = true
-                            #ansible.raw_arguments  = [
-                                 #"--connection=paramiko",
-                                #"--private-key=/vagrant/.vagrant/machines/.../private_key"
-                            #]
-                            #ansible.galaxy_role_file = "requirements.yml"
-                        end
-                    end
-                end
-            end
         end
     end
     config.hostmanager.enabled      = true

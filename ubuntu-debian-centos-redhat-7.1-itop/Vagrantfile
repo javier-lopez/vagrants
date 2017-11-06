@@ -5,11 +5,34 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-#host  = RbConfig::CONFIG['host_os']
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name  => "#{DIRNAME}.example.com",
+        :box   => "centos/7", #broken on Windows when used as vagrant host
+        #workarounds:
+        # => use a non official centos image with vbguest additions preinstalled
+        # => install rsync on the Windows host
+        # => use vagrant-vbguest plugin to install automatically vbguest into the vm
+        # => sync manually the required files [currently used]
+        #:box  => "ubuntu/trusty64"
+        :ram   => "1024", :cpus  => "1",
+        :ip    => "10.10.10.11",
+    },
+]
+
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
+end
+
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
 
 #cross-platform way of finding an executable in the $PATH.
 def which(cmd)
@@ -24,41 +47,30 @@ def which(cmd)
 end
 
 host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box = "centos/7" #broken on Windows when used as vagrant host
-            #workarounds:
-            # => use a non official centos image with vbguest additions preinstalled
-            # => install rsync on the Windows host
-            # => use vagrant-vbguest plugin to install automatically vbguest into the vm
-            # => sync manually the required files [currently used]
-            #machine.vm.box = "ubuntu/trusty64"
-            machine.vm.hostname = name
-            machine.vm.network :private_network, ip: ip
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box      = host[:box]
+            machine.vm.box_url  = host[:box_url] if host[:box_url]
+            machine.vm.hostname = host[:name]
+            machine.vm.network :private_network, ip: host[:ip]
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.name = name
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-                vbox.customize ["modifyvm", :id, "--memory", 1024]
-                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+                vbox.name = host[:name]
+                vbox.linked_clone = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
             end
 
-            #$ vagrant plugin install vagrant-hosts
-            if Vagrant.has_plugin?('vagrant-hosts')
-                machine.vm.provision :hosts, sync_hosts: true
-            elsif Vagrant.has_plugin?('vagrant-hostmanager')
-                machine.hostmanager.enabled     = true
-                machine.hostmanager.manage_host = true
-                machine.hostmanager.aliases     = aliases
+            if host_counter == 0
+                #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+                CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+                CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+                CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+                CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+                CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+                CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
             end
-
-            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
-            CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
-            CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
-            CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
-            CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
-            CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-            CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
 
             if machine.vm.box.match(/^centos/)
                 if !which('rsync') #Windows case
@@ -107,18 +119,34 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             #only execute ansible when all hosts are ready
             host_counter = host_counter + 1
             if host_counter == hosts.length
+
+                #create ansible inventory groups to apply group_vars
+                ansible_groups = {}; for h in hosts do
+                  if ansible_groups.has_key?(h[:group])
+                    #append to list
+                    ansible_groups[h[:group]].push(h[:name])
+                  else
+                    ansible_groups[h[:group]] = [h[:name]]
+                  end
+                end
+
                 if which('ansible-playbook')
                     machine.vm.provision "ansible" do |ansible|
-                        ansible.verbose  = "vvv"
-                        ansible.playbook = "ansible.yml"
+                        ansible.playbook    = "ansible.yml"
+                        ansible.config_file = "ansible.cfg"
+                        ansible.limit       = "all"
+                        ansible.groups      = ansible_groups
+                        #ansible.verbose    = "vvv"
                         #ansible.galaxy_role_file = "requirements.yml"
                     end
                 else
                     machine.vm.provision "ansible_local" do |ansible|
-                        ansible.verbose        = "vvv"
+                        #ansible.verbose        = "vvv"
                         ansible.playbook       = "ansible.yml"
                         ansible.inventory_path = "development.hosts"
+                        ansible.config_file    = "ansible.cfg"
                         ansible.limit          = "all"
+                        ansible.groups         = ansible_groups
                         #ansible.sudo           = true
                         #ansible.raw_arguments  = [
                              #"--connection=paramiko",
@@ -128,7 +156,9 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                     end
                 end
             end
-
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end

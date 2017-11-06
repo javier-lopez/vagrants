@@ -5,45 +5,56 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-#host  = RbConfig::CONFIG['host_os']
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name  => "#{DIRNAME}.example.com",
+        :box   => "minos/core-16.04",
+        :ram   => "512", :cpus  => "1",
+        :ip    => "10.10.10.11",
+    },
+]
 
-#host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box = "minos/core-16.04"
-            machine.vm.hostname = name
-            machine.vm.network :private_network, ip: ip
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
+end
 
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
+
+host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box      = host[:box]
+            machine.vm.box_url  = host[:box_url] if host[:box_url]
+            machine.vm.hostname = host[:name]
+
+            machine.vm.network :private_network, ip: host[:ip]
             #machine.vm.network "forwarded_port", guest: 80,   host: 8080, auto_correct: true, id:"httpd"
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.name = name
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-                vbox.customize ["modifyvm", :id, "--memory", 1024]
-                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+                vbox.name = host[:name]
+                vbox.linked_clone = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
             end
 
-            #$ vagrant plugin install vagrant-hosts
-            if Vagrant.has_plugin?('vagrant-hosts')
-                machine.vm.provision :hosts, sync_hosts: true
-            elsif Vagrant.has_plugin?('vagrant-hostmanager')
-                machine.hostmanager.enabled     = true
-                machine.hostmanager.manage_host = true
-                machine.hostmanager.aliases     = aliases
+            if host_counter == 0
+                #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+                CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+                CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+                CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+                CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+                CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+                CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
             end
-
-            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
-            CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
-            CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
-            CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
-            CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
-            CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-            CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
 
             #authorize default public ssh key
             CMD_INLINE_ROOT.call("mkdir -p /root/.ssh/")
@@ -92,4 +103,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             }
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end

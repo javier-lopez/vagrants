@@ -5,45 +5,62 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-#host  = RbConfig::CONFIG['host_os']
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name  => "#{DIRNAME}.example.com",
+        :box   => "jhakonen/windows-10-n-pro-en-x86_64",
+        :ram   => "2048", :cpus  => "1",
+        :ip    => "10.10.10.11",
+    },
+]
 
-#vagrant-hostmanager automatically edit hosts files to let vms communicate by domain
-#raise "vagrant-hostmanager plugin must be installed: $ vagrant plugin install vagrant-hostmanager" unless Vagrant.has_plugin? "vagrant-hostmanager"
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
+end
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box          = "jhakonen/windows-10-n-pro-en-x86_64"
-            #machine.vm.box         = "giorgioinf/win10N-shell"
-            #machine.vm.box         = "Microsoft/EdgeOnWindows10" #winrm integration broken
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
+
+host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box          = host[:box]
+            machine.vm.box_url      = host[:box_url] if host[:box_url]
+            machine.vm.hostname     = host[:name]
             machine.vm.guest        = :windows
             machine.vm.communicator = "winrm"
 
             #network
-            machine.vm.network :private_network, ip: ip
+            machine.vm.network :private_network, ip: host[:ip]
             #machine.vm.network :forwarded_port, guest: 22, host: 2222, auto_correct: true,   id: "ssh"
             #machine.vm.network :forwarded_port, guest: 3389, host: 3389, auto_correct: true, id: "rdp"
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.name = name
-                vbox.gui  = true
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/ or Vagrant::VERSION =~ /^2.0/
+                vbox.name         = host[:name]
+                vbox.linked_clone = true
+                vbox.gui          = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
                 vbox.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
-                vbox.customize ["modifyvm", :id, "--memory", 2048]
-                #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
             end
 
-            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
-            CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
-            CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
-            CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
-            CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
-            CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-            CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+            if host_counter == 0
+                #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+                CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+                CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+                CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+                CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+                CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+                CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+            end
 
             #provision
             Dir.glob("#{CURRENT_DIR}/provision/0*.ps1").sort.each { |provision_script|

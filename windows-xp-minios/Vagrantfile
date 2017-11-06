@@ -5,32 +5,54 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-#host  = RbConfig::CONFIG['host_os']
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name    => "#{DIRNAME}.example.com",
+        :box     => "xp-minios",
+        :box_url => "http://f.javier.io/public/vagrant/xp-minios.box",
+        :ram     => "512", :cpus  => "1",
+        :ip      => "10.10.10.11",
+    },
+]
+
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
+end
+
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box          = "xp-minios"
-            machine.vm.box_url      = "http://f.javier.io/public/vagrant/xp-minios.box"
-            machine.vm.hostname     =  name
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box          = host[:box]
+            machine.vm.box_url      = host[:box_url] if host[:box_url]
+            machine.vm.hostname     = host[:name]
             machine.vm.guest        = :windows
             machine.vm.communicator = "ssh"
 
             #network
-            machine.vm.network :private_network, ip: ip
+            machine.vm.network :private_network, ip: host[:ip]
             machine.vm.network :forwarded_port, guest: 22, host: 2222, auto_correct: true,   id: "ssh"
             machine.vm.network :forwarded_port, guest: 3389, host: 3389, auto_correct: true, id: "rdp"
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.gui  = true
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-                #vbox.customize ["modifyvm", :id, "--memory", 2048]
-                #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+                vbox.gui          = true
+                vbox.linked_clone = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
             end
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end

@@ -5,10 +5,29 @@ Vagrant.require_version '>= 1.8.2'
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
 
-hosts = {
+hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
-    "#{DIRNAME}.example.com"  => "10.10.10.10",
-}
+    {
+        :name  => "#{DIRNAME}.example.com",
+        :box   => "centos/7",
+        #:box  => "ubuntu/trusty64" #mysql won't install without interactively set a root password
+        :ram   => "512", :cpus  => "1",
+        :ip    => "10.10.10.11",
+    },
+]
+
+host_os  = RbConfig::CONFIG['host_os']
+if host_os =~ /linux/
+    all_cpus = `nproc`.to_i
+elsif host_os =~ /darwin/
+    all_cpus = `sysctl -n hw.ncpu`.to_i
+else #windows?
+    all_cpus = `wmic cpu get NumberOfCores`.split("\n")[2].to_i
+end
+
+default_ram  = '512' #MB
+default_cpu  = '50'  #%
+default_cpus = all_cpus || '1'
 
 $admin_preconditions = <<SCRIPT
 setenforce Permissive #disable temporalely selinux
@@ -137,7 +156,7 @@ echo '<?php phpinfo(); ?>' > ~/info.php
 wget -q -O- http://localhost/info.php | tail -15 && rm -rf ~/info.php
 SCRIPT
 
-# Cross-platform way of finding an executable in the $PATH.
+#cross-platform way of finding an executable in the $PATH.
 def which(cmd)
     exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
     ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
@@ -150,36 +169,21 @@ def which(cmd)
 end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    hosts.each do |name, ip|
-        config.vm.define name do |machine|
-            machine.vm.box = "centos/7"
-            #machine.vm.box = "ubuntu/trusty64" #mysql won't install without interactively set a root password
-            machine.vm.hostname = name
-            machine.vm.network :private_network, ip: ip
+    hosts.each do |host|
+        config.vm.define host[:name] do |machine|
+            machine.vm.box      = host[:box]
+            machine.vm.box_url  = host[:box_url] if host[:box_url]
+            machine.vm.hostname = host[:name]
+
+            machine.vm.network :private_network, ip: host[:ip]
             machine.vm.network "forwarded_port", guest: 80, host: 8080, id:"httpd"
 
             machine.vm.provider "virtualbox" do |vbox|
-                vbox.name = name
-                vbox.linked_clone = true if Vagrant::VERSION =~ /^1.8/
-                if vbox.name.match(/^core/)
-                    vbox.customize ["modifyvm", :id, "--memory", 512]
-                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
-                #elsif vbox.name == "foo"
-                    #vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
-                    #vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
-                else
-                    vbox.customize ["modifyvm", :id, "--memory", 256]           #MB
-                    vbox.customize ["modifyvm", :id, "--cpuexecutioncap", "50"] #%
-                end
-            end
-
-            #$ vagrant plugin install vagrant-hosts
-            if Vagrant.has_plugin?('vagrant-hosts')
-                machine.vm.provision :hosts, sync_hosts: true
-            elsif Vagrant.has_plugin?('vagrant-hostmanager')
-                machine.hostmanager.enabled     = true
-                machine.hostmanager.manage_host = true
-                machine.hostmanager.aliases     = aliases
+                vbox.name = host[:name]
+                vbox.linked_clone = true
+                vbox.customize ["modifyvm", :id, "--memory", host[:ram] || default_ram ]          #MB
+                vbox.customize ["modifyvm", :id, "--cpuexecutioncap", host[:cpu] || default_cpu ] #%
+                vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
             end
 
             #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
@@ -243,4 +247,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             machine.vm.provision "shell", inline: $user_preconditions, privileged: false
         end
     end
+    config.hostmanager.enabled      = true
+    config.hostmanager.manage_host  = true
+    config.hostmanager.manage_guest = true
 end
