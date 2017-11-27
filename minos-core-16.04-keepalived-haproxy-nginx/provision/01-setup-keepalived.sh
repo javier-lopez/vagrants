@@ -15,7 +15,7 @@ vrrp_script chk_haproxy {               # Requires keepalived-1.1.13
 }
 
 vrrp_instance VI_1 {
-        #interface eth1 #for non systemd/udev systems or previous to systemd v197
+        #interface eth1  #for non systemd/udev systems or previous to systemd v197
         interface enp0s8 #https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
         state MASTER
         virtual_router_id 51
