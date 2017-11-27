@@ -52,29 +52,28 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 vbox.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
             end
 
-            if host_counter == 0
-                #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
-                CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
-                CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
-                CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
-                CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
-                CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-                CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-            end
+            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+            #why not UPPERCASE?: https://ruby-doc.org/docs/ruby-doc-bundle/UsersGuide/rg/constants.html
+            cmd_script_root        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+            cmd_script             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+            cmd_inline_root        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+            cmd_inline             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+            cmd_script_always_root = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+            cmd_script_always      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
 
             #provision
             Dir.glob("#{CURRENT_DIR}/provision/0*.ps1").sort.each { |provision_script|
-                CMD_SCRIPT_ROOT.call(provision_script)
+                cmd_script_root.call(provision_script)
             }
 
             #optional
             Dir.glob("#{CURRENT_DIR}/provision/extra-*.ps1").sort.each { |provision_script|
-                CMD_SCRIPT_ROOT.call(provision_script)
+                cmd_script_root.call(provision_script)
             }
 
             #recurrent jobs
             Dir.glob("#{CURRENT_DIR}/provision/always-*.ps1").sort.each { |provision_script|
-                CMD_SCRIPT_ALWAYS_ROOT.call(provision_script)
+                cmd_script_always_root.call(provision_script)
             }
         end
     end

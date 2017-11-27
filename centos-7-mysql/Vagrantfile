@@ -57,52 +57,51 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 vbox.customize ["modifyvm", :id, "--cpus", host[:cpus] || default_cpus ]
             end
 
-            if host_counter == 0
-                #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
-                CMD_SCRIPT_ROOT        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
-                CMD_SCRIPT             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
-                CMD_INLINE_ROOT        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
-                CMD_INLINE             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
-                CMD_SCRIPT_ALWAYS_ROOT = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-                CMD_SCRIPT_ALWAYS      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
-            end
+            #echo cmds, lambda syntax: http://stackoverflow.com/questions/8476627/what-do-you-call-the-operator-in-ruby
+            #why not UPPERCASE?: https://ruby-doc.org/docs/ruby-doc-bundle/UsersGuide/rg/constants.html
+            cmd_script_root        = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: true  }
+            cmd_script             = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, privileged: false }
+            cmd_inline_root        = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: true  }
+            cmd_inline             = -> (cmd) { machine.vm.provision 'shell', inline: cmd, name: cmd, privileged: false }
+            cmd_script_always_root = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
+            cmd_script_always      = -> (cmd) { machine.vm.provision 'shell', path:   cmd, name: cmd, run: "always", privileged: false }
 
             if machine.vm.box.match(/^centos/)
                 if !which('rsync') #Windows case
                     machine.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
-                    CMD_INLINE_ROOT.call("rm -rf /vagrant /vagrant-tmp")
-                    CMD_INLINE_ROOT.call("mkdir -p /vagrant /vagrant-tmp")
-                    CMD_INLINE_ROOT.call("chown -R vagrant:vagrant /vagrant /vagrant-tmp")
+                    cmd_inline_root.call("rm -rf /vagrant /vagrant-tmp")
+                    cmd_inline_root.call("mkdir -p /vagrant /vagrant-tmp")
+                    cmd_inline_root.call("chown -R vagrant:vagrant /vagrant /vagrant-tmp")
                     machine.vm.provision "file", source: ".", destination: "/vagrant-tmp/"
-                    CMD_INLINE_ROOT.call("mv /vagrant-tmp/*/* /vagrant/")
-                    CMD_INLINE_ROOT.call("mv /vagrant-tmp/*/.vagrant /vagrant/")
-                    CMD_INLINE_ROOT.call("rm -rf /vagrant-tmp")
-                    CMD_INLINE_ROOT.call("ln -s /vagrant/ /home/vagrant/vagrant")
+                    cmd_inline_root.call("mv /vagrant-tmp/*/* /vagrant/")
+                    cmd_inline_root.call("mv /vagrant-tmp/*/.vagrant /vagrant/")
+                    cmd_inline_root.call("rm -rf /vagrant-tmp")
+                    cmd_inline_root.call("ln -s /vagrant/ /home/vagrant/vagrant")
                 end
             end
 
             #authorize default public ssh key
-            CMD_INLINE_ROOT.call("mkdir -p /root/.ssh/")
-            CMD_INLINE.call     ("mkdir -p /home/vagrant/.ssh/")
+            cmd_inline_root.call("mkdir -p /root/.ssh/")
+            cmd_inline.call     ("mkdir -p /home/vagrant/.ssh/")
             if File.file?("#{Dir.home}/.ssh/id_rsa.pub")
                 ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
-                CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
-                CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
+                cmd_inline_root.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
+                cmd_inline.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
             end
 
             #copy private ssh key
             if File.file?("#{Dir.home}/.ssh/id_rsa")
                 machine.vm.provision "file",  source: "~/.ssh/id_rsa", destination: "/home/vagrant/.ssh/id_rsa"
-                CMD_INLINE.call("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
-                CMD_INLINE.call("chmod 600 /home/vagrant/.ssh/id_rsa")
+                cmd_inline.call("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
+                cmd_inline.call("chmod 600 /home/vagrant/.ssh/id_rsa")
             else
                 if File.file?("ansible-local/ansible-local.pub")
                     ssh_pub_key = File.readlines("ansible-local/ansible-local.pub").first.strip
-                    CMD_INLINE_ROOT.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
-                    CMD_INLINE.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
+                    cmd_inline_root.call("printf '\\n%s\\n' '#{ssh_pub_key}' >> /root/.ssh/authorized_keys")
+                    cmd_inline.call     ("printf '\\n%s\\n' '#{ssh_pub_key}' >> /home/vagrant/.ssh/authorized_keys")
                     machine.vm.provision "file",  source: "ansible-local/ansible-local.priv", destination: "/home/vagrant/.ssh/id_rsa"
-                    CMD_INLINE.call     ("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
-                    CMD_INLINE.call     ("chmod 600 /home/vagrant/.ssh/id_rsa")
+                    cmd_inline.call     ("chown vagrant:vagrant /home/vagrant/.ssh/id_rsa")
+                    cmd_inline.call     ("chmod 600 /home/vagrant/.ssh/id_rsa")
                 end
             end
 
@@ -113,17 +112,17 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
             #provision
             Dir.glob("#{CURRENT_DIR}/provision/0*.sh").sort.each { |provision_script|
-                CMD_SCRIPT.call(provision_script)
+                cmd_script.call(provision_script)
             }
 
             #optional
             Dir.glob("#{CURRENT_DIR}/provision/extra-*.sh").sort.each { |provision_script|
-                CMD_SCRIPT.call(provision_script)
+                cmd_script.call(provision_script)
             }
 
             #recurrent jobs
             Dir.glob("#{CURRENT_DIR}/provision/always-*.sh").sort.each { |provision_script|
-                CMD_SCRIPT_ALWAYS.call(provision_script)
+                cmd_script_always.call(provision_script)
             }
         end
     end
