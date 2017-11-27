@@ -22,6 +22,7 @@ http://10.10.10.10/haproxy?stats to see the proxy status, it works like this:
  * nginx-02.example.com   => 10.10.10.15
  * nginx-03.example.com   => 10.10.10.16
 
+```
                        +---------------------------+         +-------------+
                        |    Keepalive / HAProxy    |_________|    Nginx    |  ____
                        |     - - - - / 10.10.10.12 |    |    | 10.10.10.14 |      |
@@ -39,6 +40,7 @@ http://10.10.10.10/haproxy?stats to see the proxy status, it works like this:
                        |    Keepalive / HAProxy    |____|____|    Nginx    |  ____|
                        |    - - - -  / 10.10.10.13 |         | 10.10.10.16 |
                        +---------------------------+         +-------------+
+```
 
 Use `ip addr | grep 10.10.10.10` on haproxy sites to find out the current node
 attached to the floating ip.
