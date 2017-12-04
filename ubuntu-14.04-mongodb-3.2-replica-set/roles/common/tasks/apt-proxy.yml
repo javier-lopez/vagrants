@@ -1,6 +1,7 @@
 ---
 
 - name: Enable apt-proxy
-  apt: name={{item}} state=installed install_recommends=no force=yes
+  shell: apt-get update && apt-get install -y {{item}}
+  #apt: name={{item}} state=installed install_recommends=no force=yes update_cache=yes cache_valid_time=3600
   with_items:
   - squid-deb-proxy-client
