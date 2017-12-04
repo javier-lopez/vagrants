@@ -21,6 +21,7 @@
 
 - name: Stop MongoDB
   shell: service mongod stop
+  ignore_errors: yes
 
 - name: Configure upstart init script - [ubuntu/debian]
   replace: dest=/etc/init/mongod.conf regexp='/var/run/mongodb.pid' replace='{{pidPath}}'

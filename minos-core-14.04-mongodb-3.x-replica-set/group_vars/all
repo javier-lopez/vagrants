@@ -6,7 +6,7 @@ engine  : wiredTiger
 logPath : /var/log/mongodb/mongodb.log
 pidPath : /var/run/mongodb/mongod-27017.pid
 repName : rep-set-01
-#keyFile : /var/lib/mongodb-mms-automation/keyfile
+keyFile : /var/lib/mongodb-mms-automation/keyfile
 
 users:
   - username: admin

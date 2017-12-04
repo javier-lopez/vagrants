@@ -1,9 +1,9 @@
 ---
 - name: Add mongodb gpg key
-  apt_key: keyserver=keyserver.ubuntu.com id=EA312927
+  apt_key: keyserver=keyserver.ubuntu.com id=2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
 
 - name: Enable mongodb-enterprise deb repository
-  apt_repository: repo='deb http://repo.mongodb.com/apt/ubuntu trusty/mongodb-enterprise/stable multiverse' state=present update_cache=yes
+  apt_repository: repo='deb http://repo.mongodb.com/apt/ubuntu trusty/mongodb-enterprise/{{mongodb_version}} multiverse' state=present update_cache=yes
 
 - name: Install mongodb-enterprise
   apt: name={{item}} state=installed install_recommends=no force=yes
@@ -11,7 +11,7 @@
   - mongodb-enterprise
 
 - name: Create mongo db directory
-  file: path={{ dbPath }} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
+  file: path={{dbPath}} state=directory owner=mongodb group=mongodb mode=0755 recurse=yes
 
 - name: Set default mongodb settings
   template: src=etc##mongod.conf.j2 dest=/etc/mongod.conf owner=root group=root mode=0644
