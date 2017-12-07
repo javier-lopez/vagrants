@@ -42,9 +42,32 @@ http://10.10.10.10/haproxy?stats to see the proxy status, it works like this:
                        +---------------------------+         +-------------+
 ```
 
+Additional information
+----------------------
+
 Use `ip addr | grep 10.10.10.10` on haproxy sites to find out the current node
-attached to the floating ip.
+attached to the floating ip:
 
     $ for node in 01 02 03; do
         vagrant ssh haproxy-$node.example.com -c "ip addr | grep 10.10.10.10 && echo haproxy-$node has it!"
       done
+
+Use `curl 10.10.10.10` to test the current infraestructure while destroying
+nodes:
+
+    $ while :; do curl 10.10.10.10; echo ------; sleep 1; done
+        <html><head><title>nginx-01.example.com</title></head>
+        <body><h1>nginx-01.example.com</h1></body></html>
+        ------
+        <html><head><title>nginx-02.example.com</title></head>
+        <body><h1>nginx-02.example.com</h1></body></html>
+        ------
+        <html><head><title>nginx-03.example.com</title></head>
+        <body><h1>nginx-03.example.com</h1></body></html>
+        ------
+
+Pro tip: use `socat` to redirect LAN traffic to your private floating ip:
+
+    $ sudo socat TCP4-LISTEN:www,reuseaddr,fork TCP4:10.10.10.10:80
+
+Now your LAN clients would be able to connect through http://your-host-machine-ip
