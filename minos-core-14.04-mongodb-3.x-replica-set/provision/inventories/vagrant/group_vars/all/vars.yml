@@ -1,4 +1,7 @@
-# mongodb
+skip_common:  False
+skip_mongodb_replica_set: False
+
+#mongodb
 port    : 27017
 bindIp  : 0.0.0.0
 dbPath  : /var/lib/mongodb

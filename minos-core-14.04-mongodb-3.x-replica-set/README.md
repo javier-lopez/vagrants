@@ -6,23 +6,19 @@ About
 Usage
 -----
 
-Edit `./group_vars/all` to customize default parameters.
+Edit `./provision/group_vars/all` to customize default parameters.
 
     #development
-    $ $EDITOR ./group_vars/all
+    $ $EDITOR ./provision/group_vars/all
     $ vagrant up
 
     #production
-    $ $EDITOR ./group_vars/all
-    $ ansible-playbook -i production.hosts -vvvv ansible.yml
+    $ $EDITOR ./provision/group_vars/all
+    $ ansible-playbook -i provision/production.hosts -vvvv provision/ansible.yml
 
 Required vagrant plugins
------------------------------------
+------------------------
 
-    1. vagrant-hostupdater, used to update /etc/hosts on the host
+    1. vagrant-hostmanager used to update /etc/hosts on the host/guests machines
 
-        $ vagrant plugin install vagrant-hostsupdater
-
-    2. vagrant-hosts, used to update /etc/hosts between virtual machines
-
-        $ vagrant plugin install vagrant-hosts
+        $ vagrant plugin install vagrant-hostmanager

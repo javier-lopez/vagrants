@@ -1,0 +1,22 @@
+---
+- hosts: mongodb-primary:mongodb-secundary:mongodb-arbiter
+  roles:
+    - { role: mongodb,
+        tags: [ 'provision', 'mongodb-replica-set', 'mongodb' ] }
+
+- hosts: mongodb-primary:mongodb-secundary
+  roles:
+    - { role: mongodb-replica,
+        tags: [ 'provision', 'mongodb-replica-set', 'mongodb-replica' ] }
+
+- hosts: mongodb-arbiter
+  roles:
+    - { role: mongodb-arbiter,
+        tags: [ 'provision', 'mongodb-replica-set', 'mongodb-arbiter' ] }
+
+- hosts: mongodb-primary
+  roles:
+    - { role: mongodb-create-db-users,
+        tags: [ 'provision', 'mongodb-replica-set', 'mongodb-create-db-users' ] }
+    - { role: mongodb-primary,
+        tags: [ 'provision', 'mongodb-replica-set', 'mongodb-primary' ] }

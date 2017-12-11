@@ -1,0 +1,5 @@
+---
+- import_playbook: plays/common.yml
+  when: not skip_common
+- import_playbook: plays/mongodb-replica-set.yml
+  when: not skip_mongodb_replica_set
