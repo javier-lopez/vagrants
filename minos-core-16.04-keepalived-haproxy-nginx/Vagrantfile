@@ -110,10 +110,12 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             #provision
             if machine.vm.hostname =~ /haproxy/
                 cmd_script_root.call("#{CURRENT_DIR}/provision/00-apt-update.sh")
+                cmd_script_root.call("#{CURRENT_DIR}/provision/00-setup-apt-proxy-client.sh")
                 cmd_script_root.call("#{CURRENT_DIR}/provision/01-setup-haproxy.sh")
                 cmd_script_root.call("#{CURRENT_DIR}/provision/01-setup-keepalived.sh")
             elsif machine.vm.hostname =~ /nginx/
                 cmd_script_root.call("#{CURRENT_DIR}/provision/00-apt-update.sh")
+                cmd_script_root.call("#{CURRENT_DIR}/provision/00-setup-apt-proxy-client.sh")
                 cmd_script_root.call("#{CURRENT_DIR}/provision/01-setup-nginx.sh")
             end
 
