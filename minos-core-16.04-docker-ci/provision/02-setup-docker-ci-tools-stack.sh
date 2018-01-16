@@ -10,5 +10,5 @@ fi
 
 cd docker-ci-tool-stack
 sh docker-compose.yml.native-docker-fix.sh
-docker-compose -f docker-compose-selenium.yml up -d
+#docker-compose -f docker-compose-selenium.yml up -d
 docker-compose up -d
