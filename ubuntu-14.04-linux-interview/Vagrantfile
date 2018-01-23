@@ -28,6 +28,9 @@ default_ram  = '512' #MB
 default_cpu  = '50'  #%
 default_cpus = all_cpus || '1'
 
+#vagrant-hostmanager-ext automatically edit hosts files to let vms communicate by domain
+raise "vagrant-hostmanager-ext plugin must be installed: $ vagrant plugin install vagrant-hostmanager-ext" unless Vagrant.has_plugin? "vagrant-hostmanager-ext"
+
 $admin_preconditions = <<SCRIPT
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y tmux htop vim-nox git-core mercurial subversion wget curl python-software-properties python-pip build-essential g++ default-jdk ruby nodejs golang php5-cli sqlite3
