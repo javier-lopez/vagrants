@@ -1,0 +1,27 @@
+---
+- name: lookup environment iface fact
+  shell: |
+    if [ -f /home/vagrant/.ssh/authorized_keys  ]; then
+      ifconfig | grep encap:Ethernet | awk 'END{print $1}' #last iface
+    elif nmcli --terse --fields DEVICE,STATE dev status | grep -q -w enp0s3; then
+      printf "%s\\n" "enp0s3"
+    else
+      printf "%s\\n" "eth0"
+    fi
+  ignore_errors: true
+  changed_when: false # this will never report 'changed' status
+  register: lookup_iface
+  become: yes
+  become_method: sudo
+
+- name: set iface fact
+  set_fact: cluster_iface={{lookup_iface.stdout}}
+  check_mode: no
+
+- debug: var=cluster_iface
+
+- name: set inter-communication cluster ipv4 address | vagrant
+  set_fact: cluster_ipv4_address={{hostvars[inventory_hostname]['ansible_' + cluster_iface].ipv4.address}}
+  check_mode: no
+
+- debug: var=cluster_ipv4_address

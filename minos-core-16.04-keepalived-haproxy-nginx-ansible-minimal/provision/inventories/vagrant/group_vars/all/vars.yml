@@ -1,0 +1,36 @@
+#####################
+# Play's Skip Flags #
+#####################
+skip_common:          False
+skip_load_balancer:   False
+skip_nginx:           False
+skip_post_deployment: False
+
+###########
+# General #
+###########
+env: local
+domain: example.com
+
+##############
+# Keepalived #
+##############
+keepalived_floating_ip:     10.10.10.10
+keepalived_iface:           "{{cluster_iface}}" #autodetected at running time
+#keepalived_iface:          eth1   #force specific interface
+#keepalived_iface:          enp0s3 #https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+keepalived_router_id:       69     #id that must be the same across all the peers
+keepalived_check_script:    "killall -0 haproxy" #cheaper than pidof
+keepalived_master_priority: 150
+keepalived_backup_priority: 100
+
+##############
+# HAProxy    #
+##############
+haproxy_frontend_tcp_port: 80
+haproxy_backend_tcp_port:  "{{nginx_tcp_port}}"
+
+##############
+# Nginx      #
+##############
+nginx_tcp_port: 80

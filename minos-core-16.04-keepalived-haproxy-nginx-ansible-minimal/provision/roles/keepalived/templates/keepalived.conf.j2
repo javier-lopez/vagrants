@@ -1,0 +1,25 @@
+vrrp_script chk_process_script { # requires keepalived-1.1.13
+        script "{{keepalived_check_script}}"
+        interval 2               # check every 2 seconds
+        weight 2                 # add 2 points of prio if OK
+        fall 2                   # require 2 failures for KO
+        rise 2                   # require 2 successes for OK
+}
+
+vrrp_instance VI_1 {
+{% if inventory_hostname == groups['load-balancer'][0] %}
+        state MASTER
+        priority {{keepalived_master_priority}}
+{% else %}
+        state BACKUP
+        priority {{keepalived_backup_priority}}
+{% endif %}
+        interface {{keepalived_iface}}
+        virtual_router_id {{keepalived_router_id}}
+        virtual_ipaddress {
+            {{keepalived_floating_ip}}
+        }
+        track_script {
+            chk_process_script
+        }
+}
