@@ -9,7 +9,8 @@ hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
     {
         :name  => "docker.example.com",
-        :box   => "minos/core-16.04",
+        #:box   => "minos/core-16.04",
+        :box   => "minos/core-16.04-docker",
         :ram   => "256", :cpus  => "1",
         :ip    => "10.10.10.11",
     },
