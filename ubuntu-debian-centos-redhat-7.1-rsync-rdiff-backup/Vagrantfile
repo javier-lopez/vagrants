@@ -20,6 +20,9 @@ hosts = [
     },
 ]
 
+#vagrant-hostmanager-ext automatically edit hosts files to let vms communicate by domain
+raise "vagrant-hostmanager-ext plugin must be installed: $ vagrant plugin install vagrant-hostmanager-ext" unless Vagrant.has_plugin? "vagrant-hostmanager-ext"
+
 host_os  = RbConfig::CONFIG['host_os']
 if host_os =~ /linux/
     all_cpus = `nproc`.to_i

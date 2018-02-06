@@ -29,6 +29,9 @@ default_ram  = '512' #MB
 default_cpu  = '50'  #%
 default_cpus = all_cpus || '1'
 
+#vagrant-hostmanager-ext automatically edit hosts files to let vms communicate by domain
+raise "vagrant-hostmanager-ext plugin must be installed: $ vagrant plugin install vagrant-hostmanager-ext" unless Vagrant.has_plugin? "vagrant-hostmanager-ext"
+
 $admin_preconditions = <<SCRIPT
 setenforce Permissive #disable temporalely selinux
 yum install -y epel-release
