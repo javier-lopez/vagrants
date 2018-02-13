@@ -1,0 +1,46 @@
+- name: determine swarm status
+  shell: docker info 2>/dev/null | awk '/^Swarm:/{print $2}'
+  register: swarm_status
+
+- name: initialize docker swarm mode in primary manager
+  command: >
+      docker swarm init
+      --listen-addr    {{cluster_ipv4_address}}:{{docker_swarm_tcp_port}}
+      --advertise-addr {{cluster_ipv4_address}}
+  when:
+    - swarm_status.stdout == 'inactive'
+    - inventory_hostname  == docker_swarm_primary_manager
+
+- name: capture docker-swarm manager token
+  command: docker swarm join-token -q manager
+  changed_when: false # this will never report 'changed' status
+  register: docker_swarm_manager_token
+  when: inventory_hostname == docker_swarm_primary_manager
+
+- name: capture docker-swarm worker token
+  command: docker swarm join-token -q worker
+  changed_when: false # this will never report 'changed' status
+  register: docker_swarm_worker_token
+  when: inventory_hostname == docker_swarm_primary_manager
+
+- name: retrieve docker-swarm manager token from primary server
+  set_fact: docker_swarm_manager_token="{{hostvars[docker_swarm_primary_manager]['docker_swarm_manager_token']}}"
+  changed_when: false # this will never report 'changed' status
+  when: inventory_hostname != docker_swarm_primary_manager
+
+- name: retrieve docker-swarm worker token from primary server
+  set_fact: docker_swarm_worker_token="{{hostvars[docker_swarm_primary_manager]['docker_swarm_worker_token']}}"
+  changed_when: false # this will never report 'changed' status
+  when: inventory_hostname != docker_swarm_primary_manager
+
+- name: join additional manager to docker-swarm
+  command: >
+      docker swarm join
+      --listen-addr    {{cluster_ipv4_address}}:{{docker_swarm_tcp_port}}
+      --advertise-addr {{cluster_ipv4_address}}
+      --token {{docker_swarm_manager_token.stdout}}
+      {{docker_swarm_primary_manager}}:{{docker_swarm_tcp_port}}
+  when:
+    - swarm_status.stdout  != 'active'
+    - swarm_status.stdout  != 'pending'
+    - inventory_hostname   != docker_swarm_primary_manager

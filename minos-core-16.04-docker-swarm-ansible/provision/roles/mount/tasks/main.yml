@@ -1,0 +1,27 @@
+- name: install mount dependencies
+  include_tasks: install-{{mount.type}}-dependencies.{{distro}}.yml
+  with_items: "{{mounts}}"
+  loop_control:
+    loop_var: mount
+
+- name: create mount points
+  file: path='{{item.dst}}' mode='{{item.mode|default("0777")}}' state=directory
+  with_items: "{{mounts}}"
+
+- name: add export points to /etc/fstab
+  lineinfile:
+    regexp: "^{{item.src}}"
+    path: /etc/fstab
+    line: "{{item.src}} {{item.dst}} {{item.type}} {{item.options}}"
+    state: present
+  register: fstab
+  with_items: "{{mounts}}"
+
+- name: remount
+  shell: |
+    if ! mount | grep '{{item.type}}' | grep '{{item.src}}' | grep '{{item.dst}}'; then
+      mount -t "{{item.type}}" "{{item.src}}" "{{item.dst}}"
+    fi
+  args:
+    warn: false #I know what I'm doing!.., I think...
+  with_items: "{{mounts}}"

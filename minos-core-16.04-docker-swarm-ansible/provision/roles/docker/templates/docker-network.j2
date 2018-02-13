@@ -1,0 +1,7 @@
+#http_proxy={{http_proxy}}
+#https_proxy={{http_proxy}}
+{# #no_proxy={{noproxy}} #}
+{# https://github.com/moby/moby/issues/34996 #}
+{# Worker cannot be joined to swarm cluster if proxy is configured #}
+{# FIX: Remove when docker fixes issue, 17.11? #}
+#no_proxy={{noproxy}}{% for host in groups['docker-swarm'] %},{{hostvars[host]['cluster_ipv4_address']}}{% endfor %}

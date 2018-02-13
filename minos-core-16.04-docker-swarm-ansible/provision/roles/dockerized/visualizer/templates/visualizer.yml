@@ -1,0 +1,38 @@
+version: "3.0"
+
+services:
+  visualizer:
+    image: "{{visualizer_image}}"
+    ports:
+      - "{{visualizer_tcp_port}}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+{% if visualizer_mode is defined %}{% if visualizer_mode[0] == 'replicated' %}
+      replicas: {{visualizer_mode[1]|default("1")}}
+{% else %}
+      mode: global
+{% endif %}{% endif %}
+      restart_policy:
+        condition: any
+        max_attempts: 3
+      placement:
+        constraints: [node.role == manager]
+      update_config:
+        delay: 2s
+      labels:
+        - "traefik.backend=visualizer"
+        - "traefik.frontend.rule=Host: {% for subdomain in visualizer_subdomains %}{{subdomain}}.{{domain}}, {% endfor %}"
+        - "traefik.docker.network=traefik_external"
+        - "traefik.port=8080"
+    networks:
+      - traefik_external
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: local2 #as defined at roles/docker/templates/rsyslog.docker.conf
+        tag: "docker/{% raw %}{{.Name}}{% endraw %}"
+
+networks:
+  traefik_external:
+    external: true

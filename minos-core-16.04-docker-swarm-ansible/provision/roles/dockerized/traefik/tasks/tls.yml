@@ -1,0 +1,8 @@
+- name: create traefik tls directory
+  file: path={{docker_compose_path}}/tls mode=755 state=directory
+
+- name: copy traefik tls certificates
+  copy: content="{{item.src}}" dest={{docker_compose_path}}/tls/{{item.dst}}
+  with_items:
+    - { src: '{{vault_traefik_tls_key}}', dst: 'wildcard.{{domain}}.key' }
+    - { src: '{{vault_traefik_tls_crt}}', dst: 'wildcard.{{domain}}.crt' }

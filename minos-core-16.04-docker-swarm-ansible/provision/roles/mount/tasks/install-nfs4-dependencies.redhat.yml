@@ -1,0 +1,9 @@
+- name: install NFS client
+  yum: name={{item}} state=present
+  with_items:
+    - nfs-utils
+
+- name: enable rpcbind service
+  systemd: name={{item}} enabled=yes state=started
+  with_items:
+    - rpcbind

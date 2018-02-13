@@ -1,0 +1,20 @@
+- name: create compose config folder
+  file: path={{docker_compose_path}} mode=755 state=directory
+
+- name: create service docker volume directories
+  file: path={{persistent_storage_path}}/{{item}} state=directory
+  with_items:
+    - portainer/data
+
+- name: create portainer compose template
+  template: src=portainer.yml dest={{docker_compose_path}}/portainer.yml
+  register: compose_template
+
+- name: deploy portainer stack
+  command: docker stack deploy -c {{docker_compose_path}}/portainer.yml portainer
+  register: portainer_exec
+  when:
+    - inventory_hostname == docker_swarm_primary_manager
+    - compose_template.changed
+
+- debug: var=portainer_exec

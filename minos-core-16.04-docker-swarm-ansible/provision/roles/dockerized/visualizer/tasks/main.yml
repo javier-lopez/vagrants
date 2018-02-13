@@ -1,0 +1,20 @@
+- name: create compose config folder
+  file: path={{persistent_storage_path}} mode=755 state=directory
+
+- name: create service docker volume directories
+  file: path={{persistent_storage_path}}/{{item}} state=directory
+  with_items:
+    - docker/var/run
+
+- name: create visualizer compose template
+  template: src=visualizer.yml dest={{persistent_storage_path}}/visualizer.yml
+  register: compose_template
+
+- name: deploy visualizer stack
+  command: docker stack deploy -c {{persistent_storage_path}}/visualizer.yml visualizer
+  register: visualizer_exec
+  when:
+    - inventory_hostname == docker_swarm_primary_manager
+    - compose_template.changed
+
+- debug: var=visualizer_exec

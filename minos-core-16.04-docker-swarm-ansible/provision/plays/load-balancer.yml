@@ -1,0 +1,7 @@
+---
+- hosts: load-balancer
+  roles:
+    - { role: keepalived,
+        tags: [ 'load-balancer', 'keepalived' ] }
+    - { role: haproxy,
+        tags: [ 'load-balancer', 'haproxy' ] }

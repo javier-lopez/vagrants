@@ -1,0 +1,4 @@
+- hosts: docker-swarm.manager
+  roles:
+    - { role: visualizer,
+        tags: [ 'services', 'visualizer', 'monitor' ] }

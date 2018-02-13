@@ -1,0 +1,4 @@
+- name: install LVM
+  yum: name={{item}} state=present
+  with_items:
+    - lvm2

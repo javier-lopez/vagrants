@@ -1,0 +1,14 @@
+- name: disable rhel-7-server-rt-beta-rpms according to https://access.redhat.com/discussions/3034341
+  raw: |
+    set -x
+    subscription-manager repos --disable=rhel-7-server-rt-beta-rpms || :
+  register: raw_output
+
+- debug: var=raw_output.stdout_lines
+
+- name: retry installing ansible dependencies
+  raw: test -f {{item.cmd}} || yum -y install {{item.pkg}}
+  with_items:
+    - { cmd: '/usr/bin/python', pkg: 'python' }
+    - { cmd: '/usr/bin/pip',    pkg: 'python-pip' }
+    - { cmd: '/usr/bin/sudo',   pkg: 'sudo' }

@@ -1,0 +1,17 @@
+---
+- hosts: docker-swarm
+  roles:
+    - { role: docker,
+        tags: [ 'docker-swarm', 'docker' ] }
+    - { role: docker-compose,
+        tags: [ 'docker-swarm', 'docker-compose' ] }
+
+- hosts: docker-swarm.manager
+  roles:
+    - { role: docker-manager,
+        tags: [ 'docker-swarm', 'docker-swarm.manager' ] }
+
+- hosts: docker-swarm.worker
+  roles:
+    - { role: docker-worker,
+        tags: [ 'docker-swarm', 'docker-swarm.worker' ] }

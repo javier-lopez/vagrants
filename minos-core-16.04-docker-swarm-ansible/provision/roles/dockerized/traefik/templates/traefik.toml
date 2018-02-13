@@ -1,0 +1,41 @@
+########################
+# Global configuration #
+########################
+logLevel = "ERROR"
+#logLevel = "DEBUG"
+
+#set HTTP Entrypoint that redirects to HTTPS
+{% if traefik_tls is defined and traefik_tls == True %}
+defaultEntryPoints = ["http", "https"]
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+      entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+      [[entryPoints.https.tls.certificates]]
+      CertFile = "/tls/wildcard.{{domain}}.crt"
+      KeyFile  = "/tls/wildcard.{{domain}}.key"
+{% else %}
+defaultEntryPoints = ["http"]
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+{% endif %}
+
+################################################################
+# Web configuration backend
+################################################################
+[web]
+address = ":8080"
+
+################################################################
+# Docker configuration backend
+################################################################
+[docker]
+swarmmode = true
+watch     = true
+
+ #command: --docker --docker.swarmmode --docker.watch --web --loglevel=DEBUG --entryPoints='Name:http Address::80 Redirect.EntryPoint:https' --entryPoints='Name:https Address::443 TLS    :/tls/wildcard.{{domain}}.crt,/tls/wildcard.{{domain}}.key' --defaultEntryPoints='http,https'

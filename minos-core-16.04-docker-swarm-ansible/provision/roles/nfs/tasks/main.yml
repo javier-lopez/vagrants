@@ -1,0 +1,13 @@
+- name: install NFS
+  include_tasks: install-nfs.{{distro}}.yml
+
+- name: enable NFS service
+  include_tasks: enable-nfs.{{distro}}.yml
+
+- name: ensure exported directory exists
+  file: path='{{item.src}}' mode='{{item.mode|default("0777")}}' state=directory
+  with_items: "{{nfs_exports}}"
+
+- name: update /etc/exports
+  template: src=exports.j2 dest=/etc/exports
+  notify: reload exports

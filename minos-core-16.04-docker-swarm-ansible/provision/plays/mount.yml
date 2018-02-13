@@ -1,0 +1,5 @@
+---
+- hosts: docker-swarm:!nfs
+  roles:
+    - { role: mount,
+        tags: [ 'mount' ] }

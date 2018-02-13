@@ -1,0 +1,20 @@
+- name: create compose config folder
+  file: path={{persistent_storage_path}} mode=755 state=directory
+
+- name: create service docker volume directories
+  file: path={{persistent_storage_path}}/{{item}} state=directory
+  with_items:
+    - traefik/data
+
+- name: create traefik compose template
+  template: src=traefik.yml dest={{persistent_storage_path}}/traefik.yml
+  register: compose_template
+
+- name: deploy traefik stack
+  command: docker stack deploy -c {{persistent_storage_path}}/traefik.yml traefik
+  register: traefik_exec
+  when:
+    - inventory_hostname == docker_swarm_primary_manager
+    - compose_template.changed
+
+- debug: var=traefik_exec

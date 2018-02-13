@@ -1,0 +1,9 @@
+- name: install NFS client
+  apt: name={{item}} state=present install_recommends=no update_cache=yes cache_valid_time=86400
+  with_items:
+    - nfs-common
+
+- name: enable rpcbind service
+  systemd: name={{item}} enabled=yes state=started
+  with_items:
+    - rpcbind

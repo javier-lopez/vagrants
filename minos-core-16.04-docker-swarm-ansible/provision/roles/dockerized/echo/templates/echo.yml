@@ -1,0 +1,36 @@
+version: "3.0"
+
+services:
+  echo:
+    image: "{{echo_image}}"
+    ports:
+      - "{{echo_tcp_port}}:80"
+    deploy:
+{% if echo_mode is defined %}{% if echo_mode[0] == 'replicated' %}
+      replicas: {{echo_mode[1]|default("1")}}
+{% else %}
+      mode: global
+{% endif %}{% endif %}
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      placement:
+        constraints: [node.role == worker]
+      update_config:
+        delay: 2s
+      labels:
+        - "traefik.backend=echo"
+        - "traefik.frontend.rule=Host: {% for subdomain in echo_subdomains %}{{subdomain}}.{{alm_domain}}, {% endfor %}"
+        - "traefik.docker.network=traefik_external"
+        - "traefik.port=80"
+    networks:
+      - traefik_external
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: local2 #as defined at roles/docker/templates/rsyslog.docker.conf
+        tag: "docker/{% raw %}{{.Name}}{% endraw %}"
+
+networks:
+  traefik_external:
+    external: true

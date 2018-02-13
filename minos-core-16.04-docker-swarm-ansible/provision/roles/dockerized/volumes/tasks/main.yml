@@ -1,0 +1,9 @@
+- name: retrieve docker-swarm manager volume paths from primary server
+  set_fact: persistent_storage_paths="{{hostvars[docker_swarm_primary_manager]['persistent_storage_paths']}}"
+  changed_when: false # this will never report 'changed' status
+
+- debug: var=persistent_storage_paths
+
+- name: create service docker volume directories
+  file: path={{item}} state=directory mode=0777 #FIX: https://github.com/jenkinsci/docker/issues/493
+  with_items: "{{persistent_storage_paths}}"

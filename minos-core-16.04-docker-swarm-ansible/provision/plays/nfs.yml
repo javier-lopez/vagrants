@@ -1,0 +1,5 @@
+---
+- hosts: nfs
+  roles:
+    - { role: nfs,
+        tags: [ 'nfs' ] }

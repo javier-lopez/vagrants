@@ -1,0 +1,18 @@
+- name: install keepalived
+  include_tasks: install-keepalived.{{distro}}.yml
+
+- name: set kernel parameters and add them to /etc/sysctl.conf
+  sysctl: name={{item.name}} value={{item.value}} reload=yes state=present
+  with_items:
+    - { name: "net.ipv4.ip_nonlocal_bind", value: 1 }
+  ignore_errors: yes
+
+- name: configure keepalived
+  template: src=keepalived.conf.j2 dest=/etc/keepalived/keepalived.conf
+  notify: restart keepalived
+
+- name: enable keepalived
+  systemd: name=keepalived enabled=yes
+
+- name: ensure keepalived is running
+  service: name=keepalived enabled=yes state=started

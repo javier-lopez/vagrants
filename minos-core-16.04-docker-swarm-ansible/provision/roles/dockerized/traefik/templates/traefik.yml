@@ -1,0 +1,45 @@
+version: "3.0"
+
+services:
+  traefik:
+    image: "{{traefik_image}}"
+    command:
+      - --docker
+      - --docker.swarmmode
+      - --docker.watch
+      - --web
+      - --web.address=:8888
+      #- --loglevel=DEBUG
+    ports:
+      - "{{traefik_tcp_port}}:80"
+      - "{{traefik_monitor_tcp_port}}:8888"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+{% if traefik_mode is defined %}{% if traefik_mode[0] == 'replicated' %}
+      replicas: {{traefik_mode[1]|default("1")}}
+{% else %}
+      mode: global
+{% endif %}{% endif %}
+      restart_policy:
+        condition: any
+      update_config:
+        delay: 2s
+      placement:
+         constraints: [node.role == manager]
+      labels:
+        - "traefik.backend=traefik"
+        - "traefik.frontend.rule=Host: {% for subdomain in traefik_subdomains %}{{subdomain}}.{{domain}}, {% endfor %}"
+        - "traefik.docker.network=traefik_external"
+        - "traefik.port=8888"
+    networks:
+      - external
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: local2 #as defined at roles/docker/templates/rsyslog.docker.conf
+        tag: "docker/{% raw %}{{.Name}}{% endraw %}"
+
+networks:
+  external:
+    driver: overlay

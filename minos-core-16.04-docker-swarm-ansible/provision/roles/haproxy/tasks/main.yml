@@ -1,0 +1,47 @@
+- name: install haproxy
+  include_tasks: install-haproxy.{{distro}}.yml
+
+- name: create TLS certificates directory
+  file: path={{item}} state=directory
+  with_items:
+    - /etc/ssl/private/
+  when: haproxy_frontend_tls is defined and haproxy_frontend_tls == true
+
+- name: install TLS certificates
+  copy: content="{{item.src}}" dest="/etc/ssl/private/{{item.dst}}"
+  with_items:
+    - { src: '{{vault_haproxy_tls_key}}', dst: 'wildcard.{{domain}}.key' }
+    - { src: '{{vault_haproxy_tls_crt}}', dst: 'wildcard.{{domain}}.crt' }
+    - { src: '{{vault_haproxy_tls_pem}}', dst: 'wildcard.{{domain}}.pem' }
+  when: haproxy_frontend_tls is defined and haproxy_frontend_tls == true
+
+- name: create a directory to store haproxy pages
+  file: path={{item}} state=directory
+  with_items:
+    - /etc/haproxy/pages
+
+- name: install haproxy error pages
+  template: src="{{item}}" dest="/etc/haproxy/pages/{{item}}"
+  with_items:
+    - 503.http
+    - maintenance.http
+  notify:
+    - restart haproxy
+
+- name: copy rsyslog haproxy configuration
+  template: src=rsyslog.haproxy.conf dest=/etc/rsyslog.d/99-haproxy.conf
+  notify:
+    - restart rsyslog
+
+- name: copy logrotate haproxy configuration
+  template: src=logrotate.haproxy dest=/etc/logrotate.d/haproxy
+
+- name: configure haproxy
+  template: src=haproxy.cfg.j2 dest=/etc/haproxy/haproxy.cfg
+  notify: restart haproxy
+
+- name: enable haproxy
+  systemd: name=haproxy enabled=yes
+
+- name: ensure haproxy is running
+  service: name=haproxy enabled=yes state=started

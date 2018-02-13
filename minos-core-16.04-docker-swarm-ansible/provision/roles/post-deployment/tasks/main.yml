@@ -1,0 +1,4 @@
+- name: post-deployment
+  shell: echo 'Post-deployment'
+  args:
+    warn: false

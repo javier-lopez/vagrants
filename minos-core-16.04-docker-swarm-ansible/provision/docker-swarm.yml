@@ -1,0 +1,23 @@
+---
+- import_playbook: plays/common.yml
+  when: not skip_common
+- import_playbook: plays/load-balancer.yml
+  when: not skip_load_balancer
+- import_playbook: plays/nfs.yml
+  when: not skip_nfs
+- import_playbook: plays/mount.yml
+  when: not skip_mount
+- import_playbook: plays/docker-swarm.yml
+  when: not skip_docker_swarm
+- import_playbook: plays/dockerized/traefik.yml
+  when: not skip_dockerized_traefik
+- import_playbook: plays/dockerized/visualizer.yml
+  when: not skip_dockerized_visualizer
+- import_playbook: plays/dockerized/portainer.yml
+  when: not skip_dockerized_portainer
+- import_playbook: plays/dockerized/echo.yml
+  when: not skip_dockerized_echo
+- import_playbook: plays/dockerized/volumes.yml
+  when: not skip_dockerized_volumes
+- import_playbook: plays/post-deployment.yml
+  when: not skip_post_deployment

@@ -1,0 +1,13 @@
+{{haproxy_log_path}} {
+    daily
+    maxsize 20M
+    rotate 5
+    maxage 3
+    missingok
+    notifempty
+    compress
+    sharedscripts
+    postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}

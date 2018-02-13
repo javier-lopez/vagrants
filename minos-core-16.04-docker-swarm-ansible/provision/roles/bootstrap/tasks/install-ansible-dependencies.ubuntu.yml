@@ -1,0 +1,11 @@
+- name: update apt index
+  raw: apt-get update -y
+
+- name: install ansible dependencies
+  raw: test -f {{item.cmd}} ||  apt-get install --no-install-recommends -y {{item.pkg}}
+  register: ansible_dependencies
+  ignore_errors: true
+  with_items:
+    - { cmd: '/usr/bin/python', pkg: 'python' }
+    - { cmd: '/usr/bin/pip',    pkg: 'python-pip' }
+    - { cmd: '/usr/bin/sudo',   pkg: 'sudo' }

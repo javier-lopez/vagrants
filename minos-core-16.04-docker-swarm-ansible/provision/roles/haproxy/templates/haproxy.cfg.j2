@@ -1,0 +1,64 @@
+global
+    maxconn {{haproxy_maxconn}}
+    tune.ssl.default-dh-param 4096
+    daemon
+
+defaults
+    log 127.0.0.1   local0
+    log 127.0.0.1   local2 notice
+    #mode    http
+    mode    tcp
+    option  httplog
+    option  tcplog
+    option  dontlognull
+    retries 3
+    option redispatch
+
+    stats enable
+    # stats auth admin:admin
+    stats uri /haproxy?stats
+
+    timeout connect 5000ms
+    timeout client  50000ms
+    timeout server  50000ms
+
+    errorfile 503 /etc/haproxy/pages/503.http
+
+frontend http-in
+    bind *:{{haproxy_frontend_tcp_port}}
+    reqadd X-Forwarded-Proto:\ http
+    default_backend docker_swarm
+
+{% if haproxy_frontend_tls is defined and haproxy_frontend_tls == true %}
+frontend https-in
+    bind *:{{haproxy_frontend_tls_tcp_port}} ssl crt /etc/ssl/private/wildcard.{{domain}}.pem
+    reqadd X-Forwarded-Proto:\ https
+    default_backend docker_swarm
+{% endif %}
+
+backend docker_swarm_maintenance
+    mode http
+    errorfile 503 /etc/haproxy/pages/maintenance.http
+
+backend docker_swarm
+    mode http
+    #mode tcp
+    balance roundrobin
+    # Poor-man's sticky
+    # balance source
+    # JSP SessionID Sticky
+    # appsession JSESSIONID len 52 timeout 3h
+    #option httpchk #default POST method works for apache2 and probably other webservers
+    #option httpchk HEAD / HTTP/1.1\r\nHost:\ localhost #for nginx
+    option forwardfor
+    option http-server-close
+
+{# redirect 80 => 443 #}
+{% if haproxy_frontend_tls is defined and haproxy_frontend_tls == true %}
+    redirect scheme https if !{ ssl_fc }
+{% endif %}
+
+{# because traefik, our reverse proxy is only running in docker managers (required for routing) #}
+{% for host in groups['docker-swarm.manager'] %}
+    server {{hostvars[host]['inventory_hostname']}} {{hostvars[host]['cluster_ipv4_address']}}:{{haproxy_backend_tcp_port}} maxconn 32 check
+{% endfor %}

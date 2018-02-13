@@ -1,0 +1,22 @@
+- name: determine swarm status
+  shell: docker info 2>/dev/null | awk '/^Swarm:/{print $2}'
+  args:
+    warn: false
+  register: swarm_status
+
+- name: retrieve docker-swarm manager token from primary server
+  set_fact: docker_swarm_manager_token="{{hostvars[docker_swarm_primary_manager]['docker_swarm_manager_token']}}"
+  changed_when: false # this will never report 'changed' status
+
+- name: retrieve docker-swarm worker token from primary server
+  set_fact: docker_swarm_worker_token="{{hostvars[docker_swarm_primary_manager]['docker_swarm_worker_token']}}"
+  changed_when: false # this will never report 'changed' status
+
+- name: join additional worker to docker-swarm
+  command: >
+      docker swarm join
+      --token {{docker_swarm_worker_token.stdout}}
+      {{docker_swarm_primary_manager}}:{{docker_swarm_tcp_port}}
+  when:
+    - swarm_status.stdout != 'active'
+    - swarm_status.stdout != 'pending'

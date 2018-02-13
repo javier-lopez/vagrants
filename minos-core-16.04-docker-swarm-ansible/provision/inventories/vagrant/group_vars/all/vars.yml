@@ -1,0 +1,144 @@
+#####################
+# Play's Skip Flags #
+#####################
+skip_common:                false
+skip_load_balancer:         false
+skip_nfs:                   false
+skip_mount:                 false
+skip_docker_swarm:          false
+skip_dockerized_traefik:    false
+skip_dockerized_echo:       false
+skip_dockerized_visualizer: false
+skip_dockerized_portainer:  false
+skip_dockerized_volumes:    false
+skip_post_deployment:       false
+
+###########
+# General #
+###########
+env: local
+domain: example.com
+persistent_storage_path: /persistent_storage
+global_logs: "{{persistent_storage_path}}/logs"
+
+system_users:
+  - username: ansible
+    password: '{{vault_ansible_password}}' #openssl passwd -salt salt -1 'ansible'
+    groups: ['wheel']
+    shell: /bin/bash
+
+#proxy_host: proxy.example.com
+#proxy_port: 8080
+#http_proxy: http://{{vault_proxy_user}}:{{vault_proxy_password}}@{{proxy_host}}:{{proxy_port}}
+#no_proxy: localhost,*example.com
+
+##############
+# Keepalived #
+##############
+keepalived_floating_ip:     10.10.10.10
+keepalived_iface:           "{{cluster_iface}}" #autodetected at running time
+#keepalived_iface:          eth1   #force specific interface
+#keepalived_iface:          enp0s3 #https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+keepalived_router_id:       69     #id that must be the same across all the peers
+keepalived_check_script:    "killall -0 haproxy" #cheaper than pidof
+keepalived_master_priority: 150
+keepalived_backup_priority: 100
+
+##############
+# HAProxy    #
+##############
+haproxy_frontend_tcp_port: 80
+haproxy_frontend_tls_tcp_port: 443 #only applied when haproxy_frontend_tls == true
+haproxy_backend_tcp_port: "{{traefik_tcp_port}}"
+haproxy_log_path: "{{global_logs}}/haproxy/haproxy.log"
+haproxy_support_url: "https://example.com/help"
+haproxy_support_msg: "My Company Support"
+haproxy_frontend_tls: true
+
+##########
+# NFS    #
+##########
+nfs_exports:
+  - src: "{{persistent_storage_path}}"
+    mode: 0777
+    options: "*(rw,sync,no_root_squash,insecure)"
+
+##########
+# Mount  #
+##########
+mounts:
+  - type:    "nfs4"
+    src:     "{{groups['nfs'][0]}}:{{persistent_storage_path}}"
+    dst:     "{{persistent_storage_path}}"
+    options: "defaults 0 0"
+
+##########
+# Docker #
+##########
+docker_edition: 'ce' #Community Edition or 'ee' for Enterprise Edition
+docker_repo_url: 'https://download.docker.com/linux/centos/docker-{{docker_edition}}.repo'
+docker_gpg_key_url: 'https://download.docker.com/linux/centos/gpg'
+docker_version: 17.09.0
+docker_py_version: 2.5.1
+
+docker_daemon_tcp_port: 2375
+docker_daemon_memory_maxpct: 90
+docker_daemon_CPU_maxpct: 90
+docker_restart_policy_retry: 5
+docker_daemon_addr: "127.0.0.1:9323"
+docker_containers_log_path: "{{global_logs}}/docker/containers"
+docker_registries:
+  - "registry.example.com"
+
+docker_admin_users:
+  - "{{ansible_user}}"
+
+#https://docs.docker.com/engine/userguide/storagedriver/selectadriver/
+docker_storage_driver:  'overlay'
+#docker_storage_driver: 'overlay2'
+#docker_storage_driver: 'devicemapper'
+
+#only evaluated when docker_storage_driver == devicemapper
+docker_volume_disks:           #optional
+  - /dev/sdb
+  - /dev/sdc
+  - /dev/sdd
+docker_volume_group: vg_docker #required
+
+##################
+# Docker compose #
+##################
+docker_compose_version: 1.19.0
+docker_compose_path: /etc/docker/compose
+
+################
+# Docker Swarm #
+################
+docker_swarm_primary_manager: "{{groups['docker-swarm.manager'][0]}}"
+docker_swarm_tcp_port: 2377
+
+##########################
+# Dockerized: traefik    #
+##########################
+traefik_tcp_port: 80
+traefik_monitor_tcp_port: 8888
+traefik_image: 'traefik:v1.5-alpine'
+traefik_subdomains: ['traefik']
+traefik_mode: ['global'] #or ['replicated', 1]
+#https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/#replicated-and-global-services
+
+##########################
+# Dockerized: portainer  #
+##########################
+portainer_tcp_port: 5000
+portainer_image: 'portainer/portainer:latest'
+portainer_subdomains: ['portainer', 'manager']
+portainer_mode: ['replicated', 1] #or ['global']
+
+##########################
+# Dockerized: visualizer #
+##########################
+visualizer_tcp_port: 5001
+visualizer_image: 'dockersamples/visualizer:latest'
+visualizer_subdomains: ['visualizer', 'monitor']
+visualizer_mode: ['replicated', 1] #or ['global']
