@@ -8,25 +8,25 @@ DIRNAME     = File.basename(CURRENT_DIR)
 hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
     {
-        :name  => "mongodb-01.example.com",
-        :box   => "minos/core-14.04",
-        :group => "mongodb-primary",
-        :ram   => "512", :cpus  => "1",
-        :ip    => "10.10.10.11",
+        :name   => "mongodb-01.example.com",
+        :box    => "minos/core-14.04",
+        :groups => ["mongodb-primary"],
+        :ram    => "512", :cpus  => "1",
+        :ip     => "10.10.10.11",
     },
     {
-        :name  => "mongodb-02.example.com",
-        :box   => "minos/core-14.04",
-        :group => "mongodb-secundary",
-        :ram   => "512", :cpus  => "1",
-        :ip    => "10.10.10.12",
+        :name   => "mongodb-02.example.com",
+        :box    => "minos/core-14.04",
+        :groups => ["mongodb-secundary"],
+        :ram    => "512", :cpus  => "1",
+        :ip     => "10.10.10.12",
     },
     {
-        :name  => "mongodb-03.example.com",
-        :box   => "minos/core-14.04",
-        :group => "mongodb-arbiter",
-        :ram   => "512", :cpus  => "1",
-        :ip    => "10.10.10.13",
+        :name   => "mongodb-03.example.com",
+        :box    => "minos/core-14.04",
+        :groups => ["mongodb-arbiter"],
+        :ram    => "512", :cpus  => "1",
+        :ip     => "10.10.10.13",
     },
 ]
 
@@ -121,13 +121,15 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 if host_counter == hosts.length
 
                     #create ansible inventory groups to apply group_vars
-                    ansible_groups = {}; for h in hosts do
-                      if ansible_groups.has_key?(h[:group])
-                        #append to list
-                        ansible_groups[h[:group]].push(h[:name])
-                      else
-                        ansible_groups[h[:group]] = [h[:name]]
-                      end
+                    ansible_groups = {}; for host in hosts do
+                        for group in host[:groups] do
+                            if ansible_groups.has_key?(group)
+                                #append to list
+                                ansible_groups[group].push(host[:name])
+                            else
+                                ansible_groups[group] = [host[:name]]
+                            end
+                        end
                     end
 
                     if which('ansible-playbook')

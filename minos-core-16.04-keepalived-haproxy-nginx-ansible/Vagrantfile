@@ -8,46 +8,46 @@ DIRNAME     = File.basename(CURRENT_DIR)
 hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
     {
-        :name  => "haproxy-01.example.com",
-        :box   => "minos/core-16.04",
-        :group => "load-balancer",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.11",
+        :name   => "haproxy-01.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["load-balancer"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.11",
     },
     {
-        :name  => "haproxy-02.example.com",
-        :box   => "minos/core-16.04",
-        :group => "load-balancer",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.12",
+        :name   => "haproxy-02.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["load-balancer"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.12",
     },
     {
-        :name  => "haproxy-03.example.com",
-        :box   => "minos/core-16.04",
-        :group => "load-balancer",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.13",
+        :name   => "haproxy-03.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["load-balancer"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.13",
     },
     {
-        :name  => "nginx-01.example.com",
-        :box   => "minos/core-16.04",
-        :group => "nginx",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.14",
+        :name   => "nginx-01.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["nginx"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.14",
     },
     {
-        :name  => "nginx-02.example.com",
-        :box   => "minos/core-16.04",
-        :group => "nginx",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.15",
+        :name   => "nginx-02.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["nginx"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.15",
     },
     {
-        :name  => "nginx-03.example.com",
-        :box   => "minos/core-16.04",
-        :group => "nginx",
-        :ram   => "256", :cpus  => "1",
-        :ip    => "10.10.10.16",
+        :name   => "nginx-03.example.com",
+        :box    => "minos/core-16.04",
+        :groups => ["nginx"],
+        :ram    => "256", :cpus  => "1",
+        :ip     => "10.10.10.16",
     },
 ]
 
@@ -142,13 +142,15 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 if host_counter == hosts.length
 
                     #create ansible inventory groups to apply group_vars
-                    ansible_groups = {}; for h in hosts do
-                      if ansible_groups.has_key?(h[:group])
-                        #append to list
-                        ansible_groups[h[:group]].push(h[:name])
-                      else
-                        ansible_groups[h[:group]] = [h[:name]]
-                      end
+                    ansible_groups = {}; for host in hosts do
+                        for group in host[:groups] do
+                            if ansible_groups.has_key?(group)
+                                #append to list
+                                ansible_groups[group].push(host[:name])
+                            else
+                                ansible_groups[group] = [host[:name]]
+                            end
+                        end
                     end
 
                     if which('ansible-playbook')

@@ -8,11 +8,12 @@ DIRNAME     = File.basename(CURRENT_DIR)
 hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
     {
-        :name  => "#{DIRNAME}.example.com",
+        :name   => "#{DIRNAME}.example.com",
         #https://github.com/javier-lopez/packers/blob/master/rhel7/rhel-7.4-multidisk-vg-docker-vbox.json
-        :box   => "javier-lopez/rhel-7.4-multidisk-vg-docker",
-        :ram   => "512", :cpus  => "1",
-        :ip    => "10.10.10.11",
+        :box    => "javier-lopez/rhel-7.4-multidisk-vg-docker",
+        :groups => ["rhel"],
+        :ram    => "512", :cpus  => "1",
+        :ip     => "10.10.10.11",
     },
 ]
 
@@ -94,13 +95,15 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 if host_counter == hosts.length
 
                     #create ansible inventory groups to apply group_vars
-                    ansible_groups = {}; for h in hosts do
-                      if ansible_groups.has_key?(h[:group])
-                        #append to list
-                        ansible_groups[h[:group]].push(h[:name])
-                      else
-                        ansible_groups[h[:group]] = [h[:name]]
-                      end
+                    ansible_groups = {}; for host in hosts do
+                        for group in host[:groups] do
+                            if ansible_groups.has_key?(group)
+                                #append to list
+                                ansible_groups[group].push(host[:name])
+                            else
+                                ansible_groups[group] = [host[:name]]
+                            end
+                        end
                     end
 
                     if which('ansible-playbook')
