@@ -67,6 +67,25 @@
 - name: install docker API client, {{docker_py_version}}
   pip: name=docker version={{docker_py_version}} state=present
 
+- name: remove ipv6 options
+  sysctl:
+    name: net.ipv6.conf.all.disable_ipv6
+    state: absent
+
+- name: set ip forward 1
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    state: present
+    reload: yes
+
+- name: increase vm.max_map_count value
+  sysctl:
+    name: vm.max_map_count
+    value: 262144
+    state: present
+    reload: yes
+
 - name: enable docker service
   systemd: name=docker enabled=yes
 
