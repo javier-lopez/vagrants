@@ -1,4 +1,3 @@
----
 - import_playbook: plays/common.yml
   when: not skip_common
 - import_playbook: plays/load-balancer.yml
