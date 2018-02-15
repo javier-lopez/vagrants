@@ -1,6 +1,3 @@
-#####################
-# Play's Skip Flags #
-#####################
 skip_common:                false
 skip_load_balancer:         false
 skip_nfs:                   false
@@ -16,10 +13,9 @@ skip_post_deployment:       false
 ###########
 # General #
 ###########
-env: local
 domain: example.com
 persistent_storage_path: /persistent_storage
-global_logs: "{{persistent_storage_path}}/logs"
+logs_path: "{{persistent_storage_path}}/logs"
 
 system_users:
   - username: ansible
@@ -50,10 +46,11 @@ keepalived_backup_priority: 100
 haproxy_frontend_tcp_port: 80
 haproxy_frontend_tls_tcp_port: 443 #only applied when haproxy_frontend_tls == true
 haproxy_backend_tcp_port: "{{traefik_tcp_port}}"
-haproxy_log_path: "{{global_logs}}/haproxy/haproxy.log"
+haproxy_log_path: "{{logs_path}}/haproxy/haproxy.log"
 haproxy_support_url: "https://example.com/help"
 haproxy_support_msg: "My Company Support"
 haproxy_frontend_tls: true
+haproxy_maxconn: 2048
 
 ##########
 # NFS    #
@@ -85,8 +82,7 @@ docker_daemon_tcp_port: 2375
 docker_daemon_memory_maxpct: 90
 docker_daemon_CPU_maxpct: 90
 docker_restart_policy_retry: 5
-docker_daemon_addr: "127.0.0.1:9323"
-docker_containers_log_path: "{{global_logs}}/docker/containers"
+docker_containers_log_path: "{{logs_path}}/docker/containers"
 docker_registries:
   - "registry.example.com"
 
