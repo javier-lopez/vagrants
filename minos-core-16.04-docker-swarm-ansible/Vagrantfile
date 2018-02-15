@@ -25,8 +25,8 @@ hosts = [
         :name   => "docker-worker.001.example.com",
         :box    => "minos/core-16.04",
         :groups => ["docker-swarm", "docker-swarm.worker"],
-        :ram    => "6144", :cpus  => "1",
-        #:ram   => "2048", :cpus  => "1",
+        #:ram   => "6144", :cpus  => "1",
+        :ram    => "1024", :cpus  => "1",
         :ip     => "10.10.10.31",
     },
 ]
