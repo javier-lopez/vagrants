@@ -65,13 +65,14 @@
 
 - name: lookup environment iface fact
   shell: |
-    if [ -f /home/vagrant/.ssh/authorized_keys  ]; then
-      printf "%s\\n" "eth1"
-      elif nmcli --terse --fields DEVICE,STATE dev status | grep -q -w enp0s3; then
-      printf "%s\\n" "enp0s3"
+    set -x
+    ifaces="$(ip address show | grep -E "^[0-9]?:" | awk '{gsub(":", ""); print $2}' | grep -v lo)"
+    if [ -f /home/vagrant/.ssh/authorized_keys ]; then
+      iface="$(printf "%s\\n" "${ifaces}" | awk 'NR == 2')"
     else
-      printf "%s\\n" "eth0"
+      iface="$(printf "%s\\n" "${ifaces}" | awk 'NR == 1')"
     fi
+    printf "%s\\n" "${iface}"
   ignore_errors: true
   changed_when: false # this will never report 'changed' status
   register: lookup_iface

@@ -83,6 +83,7 @@ docker_daemon_memory_maxpct: 90
 docker_daemon_CPU_maxpct: 90
 docker_restart_policy_retry: 5
 docker_containers_log_path: "{{logs_path}}/docker/containers"
+docker_containers_volume_path: "{{persistent_storage_path}}/volumes/docker/containers"
 docker_registries:
   - "registry.example.com"
 
@@ -126,7 +127,7 @@ traefik_mode: ['global'] #or ['replicated', 1]
 ##########################
 # Dockerized: portainer  #
 ##########################
-portainer_tcp_port: 5000
+portainer_tcp_port: 18080
 portainer_image: 'portainer/portainer:latest'
 portainer_subdomains: ['portainer', 'manager']
 portainer_mode: ['replicated', 1] #or ['global']
@@ -134,7 +135,15 @@ portainer_mode: ['replicated', 1] #or ['global']
 ##########################
 # Dockerized: visualizer #
 ##########################
-visualizer_tcp_port: 5001
+visualizer_tcp_port: 18081
 visualizer_image: 'dockersamples/visualizer:latest'
 visualizer_subdomains: ['visualizer', 'monitor']
-visualizer_mode: ['replicated', 1] #or ['global']
+visualizer_mode: ['global']
+
+##########################
+# Dockerized: echo       #
+##########################
+echo_tcp_port: 18082
+echo_image: 'katacoda/docker-http-server:v2'
+echo_subdomains: ['echo']
+echo_mode: ['replicated', 1] #or ['global']

@@ -33,10 +33,10 @@ frontend http-in
     option httplog
     capture request header Host len 60
     capture request header User-Agent len 40
-    {% raw %}{{range $i,$a:=services}}{{$mode:= printf "services/%s/mode" .Name |key}}{{if $mode |eq "http"}}acl is_site{{$i}} hdr_end(host) -m str -i {{.Name}}{% endraw %}.{{alm_domain}}{% raw %}
+    {% raw %}{{range $i,$a:=services}}{{$mode:= printf "services/%s/mode" .Name |key}}{{if $mode |eq "http"}}acl is_site{{$i}} hdr_end(host) -m str -i {{.Name}}{% endraw %}.{{domain}}{% raw %}
     {{ $aliaskey:= printf "services/%s/alias" .Name }}{{ $alias_list:= key_or_default $aliaskey "" }}{{if $alias_list | ne ""}}{{$alias:=split "," $alias_list}}
-    acl is_alias{{$i}} hdr_end(host) -m str -i{{range $v:=$alias}} {{$v}}{% endraw %}.{{alm_domain}}{% raw %}{{end}}
-    http-request redirect prefix https://{{.Name}}{% endraw %}.{{alm_domain}}{% raw %} if is_alias{{$i}}
+    acl is_alias{{$i}} hdr_end(host) -m str -i{{range $v:=$alias}} {{$v}}{% endraw %}.{{domain}}{% raw %}{{end}}
+    http-request redirect prefix https://{{.Name}}{% endraw %}.{{domain}}{% raw %} if is_alias{{$i}}
     {{end}}
     {{end}}{{end}}
     use_backend bk_sslv3 if sslv3

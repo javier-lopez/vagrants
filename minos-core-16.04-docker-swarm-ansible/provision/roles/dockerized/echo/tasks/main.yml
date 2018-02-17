@@ -2,16 +2,16 @@
   file: path={{docker_compose_path}} mode=755 state=directory
 
 - name: create service docker volume directories
-  file: path={{persistent_storage_path}}/{{item}} state=directory
+  file: path={{docker_containers_volume_path}}/{{item}} state=directory
   with_items:
     - echo/data
 
 - name: capture docker volume directories
-  set_fact: persistent_storage_paths="{{persistent_storage_paths|default([])}} + ['{{persistent_storage_path}}/{{item}}']"
+  set_fact: docker_containers_volume_paths="{{docker_containers_volume_paths|default([])}} + ['{{docker_containers_volume_path}}/{{item}}']"
   with_items:
     - echo/data
 
-- debug: var=persistent_storage_paths
+- debug: var=docker_containers_volume_paths
 
 - name: create echo compose template
   template: src=echo.yml dest={{docker_compose_path}}/echo.yml

@@ -2,7 +2,12 @@
   file: path={{docker_compose_path}} mode=755 state=directory
 
 - name: create service docker volume directories
-  file: path={{persistent_storage_path}}/{{item}} state=directory
+  file: path={{docker_containers_volume_path}}/{{item}} state=directory
+  with_items:
+    - portainer/data
+
+- name: capture docker volume directories
+  set_fact: docker_containers_volume_paths="{{docker_containers_volume_paths|default([])}} + ['{{docker_containers_volume_path}}/{{item}}']"
   with_items:
     - portainer/data
 

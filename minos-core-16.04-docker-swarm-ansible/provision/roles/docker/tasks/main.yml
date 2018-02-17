@@ -1,5 +1,5 @@
 - name: create docker logs directory
-  file: path='{{docker_containers_log_path}}' state=directory
+  file: path='{{docker_containers_log_path}}' state=directory owner=syslog
 
 - name: install docker
   include_tasks: install-docker.{{distro}}.yml
@@ -64,8 +64,8 @@
   with_fileglob:
     - certs/*
 
-- name: install docker API client, {{docker_py_version}}
-  pip: name=docker version={{docker_py_version}} state=present
+#- name: install docker API client, {{docker_py_version}}
+  #include_tasks: install-docker-api-client.{{distro}}.yml
 
 - name: remove ipv6 options
   sysctl:

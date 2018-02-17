@@ -1,4 +1,4 @@
-version: "3.0"
+version: "3.4"
 
 services:
   portainer:
@@ -9,7 +9,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       #http://portainer.readthedocs.io/en/stable/deployment.html#persist-portainer-data
-      - {{persistent_storage_path}}/portainer/data:/data
+      - {{docker_containers_volume_path}}/portainer/data:/data
     deploy:
 {% if portainer_mode is defined %}{% if portainer_mode[0] == 'replicated' %}
       replicas: {{portainer_mode[1]|default("1")}}
@@ -25,7 +25,7 @@ services:
         delay: 2s
       labels:
         - "traefik.backend=portainer"
-        - "traefik.frontend.rule=Host: {% for subdomain in portainer_subdomains %}{{subdomain}}.{{alm_domain}}, {% endfor %}"
+        - "traefik.frontend.rule=Host: {% for subdomain in portainer_subdomains %}{{subdomain}}.{{domain}}, {% endfor %}"
         - "traefik.docker.network=traefik_external"
         - "traefik.port=9000"
     networks:

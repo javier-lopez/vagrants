@@ -91,6 +91,8 @@
     {% if resolv_search is defined %}
     echo search {% for search in resolv_search %} {{search}}{% endfor %} >> /etc/resolv.conf
     {% endif %}
+  args:
+    warn: false
   when:
     - resolv_nameservers is defined
     - resolv_search is defined
@@ -118,6 +120,8 @@
     echo export no_proxy='"{{no_proxy}}"'      >> /etc/profile.d/proxy.sh
 
     subscription-manager config --server.proxy_hostname={{proxy_host}} --server.proxy_port={{proxy_port}} || :
+  args:
+    warn: false
   register: raw_output
   when: http_proxy is defined
 
@@ -128,6 +132,8 @@
 
 - name: ensure ansible dependencies are executable
   raw: test -f {{item}} && chmod -R 755 {{item}}
+  args:
+    warn: false
   with_items:
     - '/usr/bin/python2.7'
 

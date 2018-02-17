@@ -1,4 +1,4 @@
-version: "3.0"
+version: "3.4"
 
 services:
   echo:
@@ -20,7 +20,7 @@ services:
         delay: 2s
       labels:
         - "traefik.backend=echo"
-        - "traefik.frontend.rule=Host: {% for subdomain in echo_subdomains %}{{subdomain}}.{{alm_domain}}, {% endfor %}"
+        - "traefik.frontend.rule=Host: {% for subdomain in echo_subdomains %}{{subdomain}}.{{domain}}, {% endfor %}"
         - "traefik.docker.network=traefik_external"
         - "traefik.port=80"
     networks:

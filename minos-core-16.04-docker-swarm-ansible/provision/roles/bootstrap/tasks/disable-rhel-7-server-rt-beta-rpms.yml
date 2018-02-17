@@ -2,12 +2,17 @@
   raw: |
     set -x
     subscription-manager repos --disable=rhel-7-server-rt-beta-rpms || :
+  args:
+    warn: false
   register: raw_output
+
 
 - debug: var=raw_output.stdout_lines
 
 - name: retry installing ansible dependencies
   raw: test -f {{item.cmd}} || yum -y install {{item.pkg}}
+  args:
+    warn: false
   with_items:
     - { cmd: '/usr/bin/python', pkg: 'python' }
     - { cmd: '/usr/bin/pip',    pkg: 'python-pip' }

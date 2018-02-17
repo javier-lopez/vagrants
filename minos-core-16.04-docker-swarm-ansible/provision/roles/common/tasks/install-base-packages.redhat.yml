@@ -1,8 +1,6 @@
 - name: install base packages
   yum: name={{item}} state=latest
   with_items:
-    - wget
-    - htop
     - bash-completion
     - iptables
     - iptables-services

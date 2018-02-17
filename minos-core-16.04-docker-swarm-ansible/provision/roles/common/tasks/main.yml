@@ -1,3 +1,14 @@
+- name: add "wheel" group
+  group: name="wheel" state=present
+
+- name: allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%wheel'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
 - name: per-user group creation
   group: name="{{item.username}}"
   with_items: "{{system_users}}"
@@ -14,6 +25,16 @@
 - name: set up authorized_keys for system users
   authorized_key: user={{item.username}} key="{{lookup('file', '~/.ssh/id_rsa.pub')}}"
   with_items: "{{system_users}}"
+
+- name: install ansible dependencies
+  include_tasks: install-ansible-dependencies.{{distro}}.yml
+
+- name: ensure ansible dependencies are executable
+  raw: test -f {{item}} && chmod -R 755 {{item}}
+  args:
+    warn: false
+  with_items:
+    - '/usr/bin/python2.7'
 
 - name: install base packages
   include_tasks: install-base-packages.{{distro}}.yml
@@ -53,20 +74,14 @@
   include_tasks: install-base-packages.{{distro}}.yml
 
 - name: disable selinux
-  selinux: state=disabled
-
-- name: set SELinux in permissive mode until the machine is rebooted
-  command: setenforce 0
-  ignore_errors: true
-  changed_when: false
+  include_tasks: disable-selinux.{{distro}}.yml
 
 - name: enable iptables
-  systemd: name=iptables enabled=yes
+  include_tasks: enable-iptables.{{distro}}.yml
 
 - name: flush iptables
   raw: |
     iptables --flush
-    service iptables save
-
-- name: restart iptables
-  service: name=iptables state=restarted
+    service iptables save && service restart iptables || : #could not exists the service in none redhat based distros
+  args:
+    warn: false
