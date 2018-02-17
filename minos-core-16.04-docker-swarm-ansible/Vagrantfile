@@ -145,8 +145,11 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                             #puts 'ansible.groups is:'
                             #puts ansible.groups
                             #ansible.verbose    = "vvv"
-                            ansible.vault_password_file = ".vault_pass.txt"
                             #ansible.galaxy_role_file   = "requirements.yml"
+                            ansible.vault_password_file = ".vault_pass.txt"
+                            ansible.raw_arguments  = [
+                                "--extra-vars=@provision/inventories/vagrant/group_vars/all/vault.yml"
+                            ]
                         end
                     else
                         machine.vm.provision "ansible_local" do |ansible|
@@ -156,12 +159,13 @@ host_counter = 0; Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                             ansible.limit       = "all"
                             ansible.groups      = ansible_groups
                             #ansible.verbose    = "vvv"
-                            ansible.vault_password_file = ".vault_pass.txt"
+                            #puts 'ansible.groups is:'
+                            #puts ansible.groups
                             #ansible.galaxy_role_file   = "requirements.yml"
-                            #ansible.raw_arguments  = [
-                                 #"--connection=paramiko",
-                                #"--private-key=/vagrant/.vagrant/machines/.../private_key"
-                            #]
+                            ansible.vault_password_file = ".vault_pass.txt"
+                            ansible.raw_arguments  = [
+                                "--extra-vars=@provision/inventories/vagrant/group_vars/all/vault.yml"
+                            ]
                         end
                     end
                 end
