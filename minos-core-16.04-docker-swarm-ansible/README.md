@@ -11,9 +11,9 @@ Usage
 
 Go to:
 
-https://traefik.example.com to see the service routing
-https://monitor.example.com to see the docker swarm status
-https://manager.example.com to manage  docker swarm through a UI
+- https://traefik.example.com to see the service routing
+- https://monitor.example.com to see the docker swarm status
+- https://manager.example.com to manage  docker swarm through a UI
 
 ```
                                                                                           DOCKER SWARM
@@ -56,10 +56,10 @@ attached to the floating ip:
 
 Test services using:
 
-    $ while :; do curl --header 'Host: echo.example.com'    http://10.10.10.10; sleep 1; done
-    $ while :; do curl --header 'Host: traefik.example.com' http://10.10.10.10; sleep 1; done
-    $ while :; do curl --header 'Host: monitor.example.com' http://10.10.10.10; sleep 1; done
-    $ while :; do curl --header 'Host: manager.example.com' http://10.10.10.10; sleep 1; done
+    $ while :; do curl -k -L --header 'Host: echo.example.com'    http://10.10.10.10; sleep 1; done
+    $ while :; do curl -k -L --header 'Host: traefik.example.com' http://10.10.10.10; sleep 1; done
+    $ while :; do curl -k -L --header 'Host: monitor.example.com' http://10.10.10.10; sleep 1; done
+    $ while :; do curl -k -L --header 'Host: manager.example.com' http://10.10.10.10; sleep 1; done
 
 Pro tip: use `socat` to redirect LAN traffic to your private floating ip:
 
