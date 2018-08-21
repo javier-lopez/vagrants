@@ -33,21 +33,21 @@ hosts = [
         :box    => "minos/core-16.04",
         :groups => ["nginx"],
         :ram    => "256", :cpus  => "1",
-        :ip     => "10.10.10.14",
+        :ip     => "10.10.10.21",
     },
     {
         :name   => "nginx-02.example.com",
         :box    => "minos/core-16.04",
         :groups => ["nginx"],
         :ram    => "256", :cpus  => "1",
-        :ip     => "10.10.10.15",
+        :ip     => "10.10.10.22",
     },
     {
         :name   => "nginx-03.example.com",
         :box    => "minos/core-16.04",
         :groups => ["nginx"],
         :ram    => "256", :cpus  => "1",
-        :ip     => "10.10.10.16",
+        :ip     => "10.10.10.23",
     },
 ]
 

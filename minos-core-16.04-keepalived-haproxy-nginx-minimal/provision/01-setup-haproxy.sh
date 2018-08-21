@@ -46,9 +46,9 @@ backend webservers
     option httpchk HEAD / HTTP/1.1\r\nHost:\ localhost #for nginx
     option forwardfor
     option http-server-close
-    server nginx-01 10.10.10.14:80 maxconn 32 check
-    server nginx-02 10.10.10.15:80 maxconn 32 check
-    server nginx-03 10.10.10.16:80 maxconn 32 check
+    server nginx-01 10.10.10.21:80 maxconn 32 check
+    server nginx-02 10.10.10.22:80 maxconn 32 check
+    server nginx-03 10.10.10.23:80 maxconn 32 check
 E=O=F
 
 service haproxy restart
