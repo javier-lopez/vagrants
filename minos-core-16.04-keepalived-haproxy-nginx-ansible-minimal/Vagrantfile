@@ -1,6 +1,6 @@
 # vi: set ft=ruby :
 VAGRANTFILE_API_VERSION = '2'
-Vagrant.require_version '>= 1.8.2'
+Vagrant.require_version '<= 2.0.4' #greater versions break ansible support
 
 CURRENT_DIR = File.expand_path(File.dirname(__FILE__))
 DIRNAME     = File.basename(CURRENT_DIR)
