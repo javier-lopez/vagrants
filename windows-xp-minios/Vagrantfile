@@ -9,8 +9,8 @@ hosts = [
     #10.10.10.1 is configured as bridged between the host and 10.10.1.x guests
     {
         :name    => "#{DIRNAME}.example.com",
-        :box     => "xp-minios",
-        :box_url => "http://f.javier.io/public/vagrant/xp-minios.box",
+        :box     => "windows-xp-minios",
+        :box_url => "http://f.javier.io/public/vagrant/windows-xp-minios.box",
         :ram     => "512", :cpus  => "1",
         :ip      => "10.10.10.11",
     },
