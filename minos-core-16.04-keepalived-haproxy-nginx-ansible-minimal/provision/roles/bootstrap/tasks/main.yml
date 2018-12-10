@@ -1,3 +1,0 @@
----
-- name: bootstrap
-  shell: echo 'bootstrap'

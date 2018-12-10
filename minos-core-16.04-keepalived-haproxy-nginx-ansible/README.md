@@ -7,7 +7,7 @@ nginx (web service).
 Usage
 -----
 
-    $ vagrant up
+    $ vagrant up #or VAGRANT_VAGRANTFILE=Vagrantfile.minimal vagrant up
 
 Go to http://10.10.10.10 (floating ip) to see the site or to
 http://10.10.10.10/haproxy?stats to see the proxy status, it works like this:

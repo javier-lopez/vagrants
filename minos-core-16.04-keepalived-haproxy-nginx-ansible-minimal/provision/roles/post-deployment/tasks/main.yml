@@ -1,3 +1,0 @@
----
-- name: post-deployment
-  shell: echo 'Post-deployment'
